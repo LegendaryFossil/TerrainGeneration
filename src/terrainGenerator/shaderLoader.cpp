@@ -1,100 +1,187 @@
 #include "ShaderLoader.h"
 
+#include "glm\glm.hpp"
+#include "glm\gtc\matrix_transform.hpp"
+#include "glm\gtc\type_ptr.hpp"
 #include "windows.h"
+#include <cassert>
+#include <fstream>
+#include <iostream>
+#include <iterator>
 
 namespace {
-  std::string getExePath() {
-    char filePath[MAX_PATH] = { 0 };
-    GetModuleFileName(NULL, filePath, MAX_PATH);
-    std::string filePathStr(filePath);
-    filePathStr = filePathStr.substr(0, filePathStr.find_last_of("\\/"));
-    return filePathStr;
-  }
+std::string getExePath() {
+  char filePath[MAX_PATH] = {0};
+  GetModuleFileName(NULL, filePath, MAX_PATH);
+  std::string filePathStr(filePath);
+  filePathStr = filePathStr.substr(0, filePathStr.find_last_of("\\/"));
+  return filePathStr;
+}
 
-  const std::string shaderPath(getExePath() + "/resources/shaders/");
+const std::string shaderPath(getExePath() + "/resources/shaders/");
 
-  GLuint createShaderObject(GLenum eShaderType, const std::string& shaderName) {
-    GLuint shaderObject = glCreateShader(eShaderType);
-    std::ifstream shaderFile(shaderName);
-    if (shaderFile.is_open())
-    {
-      std::string content((std::istreambuf_iterator<char>(shaderFile.rdbuf())), (std::istreambuf_iterator<char>()));
-      const char* shaderContent = content.c_str();
-      glShaderSource(shaderObject, 1, &shaderContent, NULL);
-      glCompileShader(shaderObject);
+void validateShaderCompileStatus(const GLuint shaderObject, const GLuint shaderType) {
+  GLint status;
+  glGetShaderiv(shaderObject, GL_COMPILE_STATUS, &status);
+  if (status == GL_FALSE) {
+    GLint infoLogLength;
+    glGetShaderiv(shaderObject, GL_INFO_LOG_LENGTH, &infoLogLength);
+    GLchar *logInfo = new char[infoLogLength + 1];
+    glGetShaderInfoLog(shaderObject, infoLogLength, NULL, logInfo);
 
-      GLint status;
-      glGetShaderiv(shaderObject, GL_COMPILE_STATUS, &status);
-      if (status == GL_FALSE)
-      {
-        GLint infoLogLength;
-        glGetShaderiv(shaderObject, GL_INFO_LOG_LENGTH, &infoLogLength);
-        GLchar* logInfo = new char[infoLogLength + 1];
-        glGetShaderInfoLog(shaderObject, infoLogLength, NULL, logInfo);
+    const char *strShaderType = NULL;
+    switch (shaderType) {
+    case GL_VERTEX_SHADER:
+      strShaderType = "vertex";
+      break;
 
-        const char* strShaderType = NULL;
-        switch (eShaderType)
-        {
-        case GL_VERTEX_SHADER: strShaderType = "vertex";
-          break;
+    case GL_TESS_CONTROL_SHADER:
+      strShaderType = "tessellation control";
+      break;
 
-        case GL_GEOMETRY_SHADER: strShaderType = "geometry";
-          break;
+    case GL_TESS_EVALUATION_SHADER:
+      strShaderType = "tessellation evaluation";
+      break;
 
-        case GL_FRAGMENT_SHADER: strShaderType = "fragment";
-          break;
-        }
+    case GL_GEOMETRY_SHADER:
+      strShaderType = "geometry";
+      break;
 
-        fprintf(stderr, "Compile failure in %s shader:\n%s\n", strShaderType, logInfo);
-        delete[] logInfo;
-      }
-
-      return shaderObject;
-    }
-    else
-    {
-      std::cout << "Unable to open shader file: " << shaderName << std::endl;
-      exit(1);
-    }
-  }
-
-  GLuint createProgramObject(GLuint vertexShaderObject, GLuint fragmentShaderObject) {
-    GLuint programObject = glCreateProgram();
-    glAttachShader(programObject, vertexShaderObject);
-    glAttachShader(programObject, fragmentShaderObject);
-    glLinkProgram(programObject);
-
-    GLint status;
-    glGetProgramiv(programObject, GL_LINK_STATUS, &status);
-    if (status == GL_FALSE)
-    {
-      GLint infoLogLength;
-      glGetProgramiv(programObject, GL_INFO_LOG_LENGTH, &infoLogLength);
-      GLchar* logInfo = new char[infoLogLength + 1];
-      glGetProgramInfoLog(programObject, infoLogLength, NULL, logInfo);
-      fprintf(stderr, "Linker failure: %s\n", logInfo);
-      delete[] logInfo;
+    case GL_FRAGMENT_SHADER:
+      strShaderType = "fragment";
+      break;
     }
 
-    glDetachShader(programObject, vertexShaderObject);
-    glDetachShader(programObject, fragmentShaderObject);
-
-    return programObject;
+    fprintf(stderr, "Compile failure in %s shader:\n%s\n", strShaderType, logInfo);
+    delete[] logInfo;
+    assert(false);
   }
 }
 
+void validateProgramObject(const GLuint programObject) {
+  glValidateProgram(programObject);
+  GLint status;
+  glGetProgramiv(programObject, GL_VALIDATE_STATUS, &status);
+  if (status == GL_FALSE) {
+    GLint infoLogLength;
+    glGetProgramiv(programObject, GL_INFO_LOG_LENGTH, &infoLogLength);
+    GLchar *logInfo = new char[infoLogLength + 1];
+    glGetProgramInfoLog(programObject, infoLogLength, NULL, logInfo);
 
-GLuint loadShaders(const std::string& vertexShaderName, const std::string& fragmentShaderName)
-{
-  GLuint vertexShaderObject = createShaderObject(GL_VERTEX_SHADER, shaderPath + vertexShaderName);
-  GLuint fragmentShaderObject = createShaderObject(GL_FRAGMENT_SHADER, shaderPath + fragmentShaderName);
+    fprintf(stderr, "Program object creation error: %s\n", logInfo);
+    delete[] logInfo;
+    assert(false);
+  }
+}
 
-  GLuint programObject = createProgramObject(vertexShaderObject, fragmentShaderObject);
+void validateProgramObjectLinkStatus(const GLuint programObject) {
+  GLint status;
+  glGetProgramiv(programObject, GL_LINK_STATUS, &status);
+  if (status == GL_FALSE) {
+    GLint infoLogLength;
+    glGetProgramiv(programObject, GL_INFO_LOG_LENGTH, &infoLogLength);
+    GLchar *logInfo = new char[infoLogLength + 1];
+    glGetProgramInfoLog(programObject, infoLogLength, NULL, logInfo);
+    fprintf(stderr, "Linker failure: %s\n", logInfo);
+    delete[] logInfo;
+    assert(false);
+  }
+}
+} // namespace
+
+GLuint compileShader(const std::string &shaderFileName, const GLuint shaderType) {
+  GLuint shaderObject = glCreateShader(shaderType);
+  std::ifstream shaderFileStream(shaderPath + shaderFileName);
+  if (shaderFileStream.is_open()) {
+    std::string content((std::istreambuf_iterator<char>(shaderFileStream.rdbuf())),
+                        (std::istreambuf_iterator<char>()));
+    const char *shaderContent = content.c_str();
+    glShaderSource(shaderObject, 1, &shaderContent, NULL);
+    glCompileShader(shaderObject);
+    validateShaderCompileStatus(shaderObject, shaderType);
+    return shaderObject;
+  } else {
+    std::cout << "Unable to open shader file: " << shaderFileName << std::endl;
+    exit(1);
+  }
+}
+
+GLuint createProgramObject(const std::vector<GLuint> &shaderObjects) {
+  const auto programObject = glCreateProgram();
+
+  for (const auto shaderObject : shaderObjects) {
+    glAttachShader(programObject, shaderObject);
+  }
+
+  glLinkProgram(programObject);
+  validateProgramObjectLinkStatus(programObject);
+
+  for (const auto shaderObject : shaderObjects) {
+    glDetachShader(programObject, shaderObject);
+  }
+
+  validateProgramObject(programObject);
 
   return programObject;
 }
 
-void deleteProgramObject(GLuint programObject)
-{
-  glDeleteProgram(programObject);
+void deleteProgramObject(const GLuint programObject) { glDeleteProgram(programObject); }
+
+// Int
+void setUniform(const GLuint programObject, const std::string &uniformName,
+                const int uniformValue) {
+  glProgramUniform1iv(programObject, glGetUniformLocation(programObject, uniformName.c_str()), 1, &uniformValue);
+}
+void setUniform(const GLuint programObject, const std::string &uniformName,
+                const glm::ivec2 &uniformValue) {
+  glProgramUniform2iv(programObject, glGetUniformLocation(programObject, uniformName.c_str()), 1,
+                      glm::value_ptr(uniformValue));
+}
+void setUniform(const GLuint programObject, const std::string &uniformName,
+                const glm::ivec3 &uniformValue) {
+  glProgramUniform3iv(programObject, glGetUniformLocation(programObject, uniformName.c_str()), 1,
+                      glm::value_ptr(uniformValue));
+}
+void setUniform(const GLuint programObject, const std::string &uniformName,
+                const glm::ivec4 &uniformValue) {
+  glProgramUniform4iv(programObject, glGetUniformLocation(programObject, uniformName.c_str()), 1,
+                      glm::value_ptr(uniformValue));
+}
+
+// Float
+void setUniform(const GLuint programObject, const std::string &uniformName,
+                const float uniformValue) {
+  glProgramUniform1fv(programObject, glGetUniformLocation(programObject, uniformName.c_str()), 1, &uniformValue);
+}
+void setUniform(const GLuint programObject, const std::string &uniformName,
+                const glm::vec2 &uniformValue) {
+  glProgramUniform2fv(programObject, glGetUniformLocation(programObject, uniformName.c_str()), 1,
+                      glm::value_ptr(uniformValue));
+}
+void setUniform(const GLuint programObject, const std::string &uniformName,
+                const glm::vec3 &uniformValue) {
+  glProgramUniform3fv(programObject, glGetUniformLocation(programObject, uniformName.c_str()), 1,
+                      glm::value_ptr(uniformValue));
+}
+void setUniform(const GLuint programObject, const std::string &uniformName,
+                const glm::vec4 &uniformValue) {
+  glProgramUniform4fv(programObject, glGetUniformLocation(programObject, uniformName.c_str()), 1,
+                      glm::value_ptr(uniformValue));
+}
+
+// Matrices
+void setUniform(const GLuint programObject, const std::string &uniformName,
+                const glm::mat2 &uniformValue) {
+  glProgramUniformMatrix2fv(programObject, glGetUniformLocation(programObject, uniformName.c_str()), 1, GL_FALSE,
+                            glm::value_ptr(uniformValue));
+}
+void setUniform(const GLuint programObject, const std::string &uniformName,
+                const glm::mat3 &uniformValue) {
+  glProgramUniformMatrix3fv(programObject, glGetUniformLocation(programObject, uniformName.c_str()), 1, GL_FALSE,
+                            glm::value_ptr(uniformValue));
+}
+void setUniform(const GLuint programObject, const std::string &uniformName,
+                const glm::mat4 &uniformValue) {
+  glProgramUniformMatrix4fv(programObject, glGetUniformLocation(programObject, uniformName.c_str()), 1, GL_FALSE,
+                     glm::value_ptr(uniformValue));
 }

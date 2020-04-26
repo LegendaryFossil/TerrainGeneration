@@ -7,8 +7,15 @@
 
 #include "noiseMapGenerator.h"
 
+constexpr auto MAX_TEXTURES = 10;
+
 struct Vertex {
-  glm::vec4 position;
+  union {
+    glm::vec2 position2f;
+    glm::vec3 position3f;
+    glm::vec4 position4f;
+  };
+  
   glm::vec3 normal;
   glm::vec2 textureCoordinate;
 };
@@ -22,7 +29,7 @@ struct Mesh {
   GLuint vaoHandle; // Vertex array object
   GLuint vboHandle; // Vertex buffer object
   GLuint iboHandle; // Index buffer object
-  GLuint textureHandle;
+  GLuint textureHandles[MAX_TEXTURES];
 };
 
 Mesh generateMeshFromHeightMap(const NoiseMap &noiseMap);
