@@ -5,18 +5,22 @@
 #include "imGui/imgui_impl_opengl3.h"
 
 #include "GL/glew.h"
+
 #include "GLFW/glfw3.h" // Include this header last always to avoid conflicts with loading new OpenGL versions
+
 #include "glm\glm.hpp"
 #include "glm\gtc\matrix_transform.hpp"
 #include "glm\gtc\type_ptr.hpp"
 
 #include "camera.h"
 #include "shaderLoader.h"
-
 #include "meshGenerator.h"
 #include "noiseMapGenerator.h"
 #include "terrainDefs.h"
 #include "textureGenerator.h"
+#include "timeMeasureUtils.h"
+
+#include <iostream>
 
 void renderScene();
 void freeResources();
@@ -28,21 +32,18 @@ struct WindowData {
   glm::dvec2 center = glm::vec2(width / 2.0f, height / 2.0f);
 } windowData;
 
+glm::dvec2 previousMousePosition;
+
+bool keyState[256] = { false };
+
+FrameTimeData frameTimeData = {};
+
 struct ProjectionData {
   float fieldOfView = 45.0f;
   float nearPlane = 0.1f;
   float farPlane = 1000.0f;
 } projectionData;
 
-struct TimeData {
-  GLfloat prevTime = 0.0f;
-  GLfloat currentTime = 0.0f;
-  GLfloat frameTime = 0.0f;
-} timeData;
-
-glm::dvec2 previousMousePosition;
-
-bool keyState[256] = { false };
 
 Camera fpsCamera(glm::vec3(58.0f, 132.0f, 76.0f), glm::vec3(1.0f, glm::half_pi<float>(), -2.41f));
 Camera quadMeshCamera; // debugging
@@ -108,7 +109,7 @@ static void cursorPosCallback(GLFWwindow* window, double xPos, double yPos) {
 }
 
 static void handleKeyboardInput() {
-  GLfloat cameraSpeed = 10.0f * timeData.frameTime;
+  GLfloat cameraSpeed = 10.0f * float(frameTimeData.frameTime);
   if (terrainSettings.renderMode == RENDER_MODE::MESH) {
     cameraSpeed *= 5.0f;
   }
@@ -159,12 +160,6 @@ static void keyCallback(GLFWwindow* window, int key, int scancode, int action, i
     glfwSetWindowShouldClose(window, GLFW_TRUE);
 }
 
-void calcFrameTime() {
-  timeData.currentTime = GLfloat(glfwGetTime());
-  timeData.frameTime = timeData.currentTime - timeData.prevTime;
-  timeData.prevTime = timeData.currentTime;
-}
-
 void initTerrainTypeList() {
   TerrainType waterTerrain = {};
   strcpy_s(waterTerrain.name.data(), waterTerrain.name.size(), "Water");
@@ -182,7 +177,7 @@ void initTerrainTypeList() {
 }
 
 void initMeshes() {
-  noiseMapData.width = noiseMapData.height = 128;
+  noiseMapData.width = noiseMapData.height = 512;
   noiseMapData.scale = 27.6f;
   noiseMapData.octaves = 4;
   noiseMapData.persistance = 0.5f;
@@ -468,7 +463,7 @@ void renderScene() {
   handleKeyboardInput();
 
   // Measure time each frame
-  calcFrameTime();
+  updateFrameTime(&frameTimeData);
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 

@@ -6,8 +6,9 @@
 
 #include "PerlinNoise.h"
 #include "glm/glm.hpp"
+#include "timeMeasureUtils.h"
 
-NoiseMap generateNoiseMap(const NoiseMapData &noiseMapData) {
+NoiseMap generateNoiseMap(const NoiseMapData& noiseMapData) {
   assert(noiseMapData.width == noiseMapData.height);
 
   std::mt19937 rng(noiseMapData.seed);
@@ -16,7 +17,7 @@ NoiseMap generateNoiseMap(const NoiseMapData &noiseMapData) {
   octaveOffsets.reserve(noiseMapData.octaves);
   for (size_t i = 0, size = noiseMapData.octaves; i < size; ++i) {
     octaveOffsets.emplace_back(glm::vec2(rngDist(rng) + noiseMapData.octaveOffset.x,
-                                         rngDist(rng) + noiseMapData.octaveOffset.y));
+      rngDist(rng) + noiseMapData.octaveOffset.y));
   }
 
   PerlinNoise perlinNoise;
@@ -29,7 +30,6 @@ NoiseMap generateNoiseMap(const NoiseMapData &noiseMapData) {
 
   const auto halfMapWidth = noiseMapData.width / 2;
   const auto halfMapHeight = halfMapWidth;
-
   for (int i = 0; i < noiseMapData.height; ++i) {
     std::vector<float> noiseValues;
     noiseValues.reserve(noiseMapData.width);
@@ -41,13 +41,13 @@ NoiseMap generateNoiseMap(const NoiseMapData &noiseMapData) {
       for (int octave = 0; octave < noiseMapData.octaves; ++octave) {
         // minus half map dimensions to scale in to the center instead of corner
         const auto sampleX =
-            (j - halfMapWidth) / noiseMapData.scale * frequency + octaveOffsets[octave].x;
+          (j - halfMapWidth) / noiseMapData.scale * frequency + octaveOffsets[octave].x;
         const auto sampleY =
-            (i - halfMapHeight) / noiseMapData.scale * frequency + octaveOffsets[octave].y;
+          (i - halfMapHeight) / noiseMapData.scale * frequency + octaveOffsets[octave].y;
 
         // Multiplying by two and subtracting one to reinterval it from [0,1] to [-1,1]
         const float perlinNoiseValue =
-            (float(perlinNoise.noise(sampleX, sampleY, 0.0f)) * 2.0f) - 1.0f;
+          (float(perlinNoise.noise(sampleX, sampleY, 0.0f)) * 2.0f) - 1.0f;
 
         noiseHeight += perlinNoiseValue * amplitude;
 
