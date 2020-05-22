@@ -59,47 +59,6 @@ static void calculateMeshVertices(Mesh* mesh, const NoiseMap& noiseMap) {
   //assert(numOfIndices % 3 == 0);
 }
 
-Mesh generateQuadMesh() {
-  Mesh quadMesh = {};
-
-  /*Vertex v1 = {};
-  v1.position4f = glm::vec4(-2.5f, -2.5f, 0.0f, 1.0f);
-  v1.textureCoordinate = glm::vec2(0.0f, 0.0f);
-
-  Vertex v2 = {};
-  v2.position4f = glm::vec4(2.5f, -2.5f, 0.0f, 1.0f);
-  v2.textureCoordinate = glm::vec2(1.0f, 0.0f);
-
-  Vertex v3 = {};
-  v3.position4f = glm::vec4(-2.5f, 2.5f, 0.0f, 1.0f);
-  v3.textureCoordinate = glm::vec2(0.0f, 1.0f);
-
-  Vertex v4 = {};
-  v4.position4f = glm::vec4(2.5f, 2.5f, 0.0f, 1.0f);
-  v4.textureCoordinate = glm::vec2(1.0f, 1.0f);
-
-  quadMesh.vertices.reserve(4);
-  quadMesh.indices.reserve(6);
-
-  quadMesh.vertices.push_back(v1);
-  quadMesh.vertices.push_back(v2);
-  quadMesh.vertices.push_back(v3);
-  quadMesh.vertices.push_back(v4);
-
-  quadMesh.indices.push_back(0);
-  quadMesh.indices.push_back(1);
-  quadMesh.indices.push_back(2);
-  quadMesh.indices.push_back(3);
-  quadMesh.indices.push_back(2);
-  quadMesh.indices.push_back(1);
-
-  calculateMeshNormals(&quadMesh);
-
-  quadMesh.modelTransformation = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -6.0f));*/
-
-  return quadMesh;
-}
-
 Mesh generateMeshFromHeightMap(const NoiseMap& noiseMap) {
   Mesh terrainMesh = {};
   calculateMeshVertices(&terrainMesh, noiseMap);

@@ -7,8 +7,6 @@ set(SRC
 	"meshGenerator.h"
 	"noiseMapGenerator.cpp"
 	"noiseMapGenerator.h"
-	"perlinNoise.cpp"
-	"perlinNoise.h"
 	"shaderLoader.cpp"
 	"shaderLoader.h"
 	"terrainDefs.h"
@@ -52,6 +50,12 @@ set(FastNoiseSIMD_SRC
 
 set_source_files_properties("${FastNoiseSIMD_PATH}/FastNoiseSIMD_avx2.cpp" PROPERTIES COMPILE_FLAGS /arch:AVX2)
 
+set(FastNoise_PATH FastNoise)
+set(FastNoise_SRC
+	"${FastNoise_PATH}/FastNoise.h"
+	"${FastNoise_PATH}/FastNoise.cpp"
+)
+
 add_compile_options("/std:c++latest")
 
 set(LIBRARIES
@@ -60,13 +64,13 @@ set(LIBRARIES
 	"glm::glm"
 )
     
-source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SRC} ${IMGUI_SRC} ${FastNoiseSIMD_SRC})
-source_group("" FILES ${SRC} ${IMGUI_SRC} ${FastNoiseSIMD_SRC})
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SRC} ${IMGUI_SRC} ${FastNoiseSIMD_SRC} ${FastNoise_SRC})
+source_group("" FILES ${SRC} ${IMGUI_SRC} ${FastNoiseSIMD_SRC} ${FastNoise_SRC})
 
 add_executable(${NAME} "")
-target_sources(${NAME} PRIVATE ${SRC} ${IMGUI_SRC} ${FastNoiseSIMD_SRC})
+target_sources(${NAME} PRIVATE ${SRC} ${IMGUI_SRC} ${FastNoiseSIMD_SRC} ${FastNoise_SRC})
 
-target_include_directories(${NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(${NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/FastNoiseSIMD)
 target_link_libraries(${NAME} PUBLIC ${LIBRARIES})
 
 install(TARGETS ${NAME} DESTINATION ${TERRAIN_GENERATOR_EXE_PATH})

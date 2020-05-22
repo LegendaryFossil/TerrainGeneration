@@ -1,12 +1,10 @@
 set(SHADERS
-	"debugMesh.frag"
-	"debugMesh.vert"
-	"terrainGenerator.frag"
-	"terrainGenerator.vert"
-	"terrainTest.vert"
-	"terrainTest.tesc"
-	"terrainTest.tese"
-	"terrainTest.frag"
+	"terrain.vert"
+	"terrain.tesc"
+	"terrain.tese"
+	"terrain.frag"
+	"terrainDebug.tese"
+	"terrainDebug.frag"
 )
 
 install(FILES ${SHADERS} DESTINATION "${TERRAIN_GENERATOR_EXE_PATH}/resources/shaders")
