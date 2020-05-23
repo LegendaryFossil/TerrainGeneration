@@ -33,4 +33,6 @@ struct Mesh {
 };
 
 Mesh generateMeshFromHeightMap(const NoiseMap &noiseMap);
-Mesh generateQuadMesh();
+
+void createVertexBufferObject(GLuint *vboHandle, const std::vector<Vertex> &vertices);
+void createIndexBufferObject(GLuint *iboHandle, const std::vector<uint32_t> &indices);

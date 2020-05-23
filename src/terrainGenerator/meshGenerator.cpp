@@ -67,3 +67,16 @@ Mesh generateMeshFromHeightMap(const NoiseMap& noiseMap) {
 
   return terrainMesh;
 }
+
+void createVertexBufferObject(GLuint* vboHandle, const std::vector<Vertex>& vertices) {
+  glBindBuffer(GL_ARRAY_BUFFER, *vboHandle);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * vertices.size(), vertices.data(),
+               GL_STATIC_DRAW);
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+void createIndexBufferObject(GLuint* iboHandle, const std::vector<uint32_t>& indices) {
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *iboHandle);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * indices.size(), indices.data(),
+               GL_STATIC_DRAW);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+}

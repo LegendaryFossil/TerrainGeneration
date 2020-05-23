@@ -4,9 +4,9 @@
 
 #include "GL/glew.h"
 
-void createTexture2D(GLuint textureHandle, GLenum wrapMode, GLenum filterMode, const int width, const int height,
+void createTexture2D(GLuint *texHandle, GLenum wrapMode, GLenum filterMode, const int width, const int height,
                      const void *pixelData) {
-  glBindTexture(GL_TEXTURE_2D, textureHandle);
+  glBindTexture(GL_TEXTURE_2D, *texHandle);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapMode);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapMode);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filterMode);
@@ -16,9 +16,9 @@ void createTexture2D(GLuint textureHandle, GLenum wrapMode, GLenum filterMode, c
   glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void updateTexture2D(GLuint textureHandle, const int offsetX, const int offsetY, const int width, const int height,
+void updateTexture2D(GLuint *texHandle, const int offsetX, const int offsetY, const int width, const int height,
                      const void *pixelData) {
-  glBindTexture(GL_TEXTURE_2D, textureHandle);
+  glBindTexture(GL_TEXTURE_2D, *texHandle);
   glTexSubImage2D(GL_TEXTURE_2D, 0, offsetX, offsetY, width, height, GL_RGB, GL_FLOAT, pixelData);
 }
 
