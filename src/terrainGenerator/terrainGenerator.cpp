@@ -13,12 +13,17 @@
 #include "glm\gtc\type_ptr.hpp"
 
 #include "camera.h"
+#include "lightDefs.h"
 #include "meshGenerator.h"
 #include "noiseMapGenerator.h"
+#include "sceneControl.h"
 #include "shaderLoader.h"
 #include "terrainDefs.h"
 #include "textureGenerator.h"
 #include "timeMeasureUtils.h"
+#include "uniformDefs.h"
+
+#include <iostream>
 
 void renderScene();
 void freeResources();
@@ -30,126 +35,66 @@ struct WindowData {
   glm::dvec2 center = glm::vec2(width / 2.0f, height / 2.0f);
 } windowData;
 
-glm::dvec2 previousMousePosition;
-
-bool keyState[256] = {false};
+ControlInputData controlInputData;
 
 FrameTimeData frameTimeData = {};
 
-struct ProjectionData {
+struct ViewFrustumData {
   float fieldOfView = 45.0f;
   float nearPlane = 0.1f;
-  float farPlane = 1000.0f;
-} projectionData;
+  float farPlane = 10000.0f;
+} viewFrustumData;
 
-Camera fpsCamera(glm::vec3(120.0f, 236.0f, 237.0f), glm::vec3(1.0f, glm::half_pi<float>(), -2.41f));
+Camera fpsCamera(glm::vec3(113.0f, 208.0f, 330.0f), glm::vec3(1.0f, glm::half_pi<float>(), -2.41f));
 
-GLuint terrainGeneratorProgramObject;
-GLuint terrainDebugProgramObject;
+// UI settings
+struct ViewSettings {
+  enum class RENDER_MODE { NOISE_MAP, COLOR_MAP, MESH, WIREFRAME };
 
-constexpr auto ufUseNoiseMapTextureName = "useNoiseMapTexture";
-constexpr auto ufHeightMapTextureName = "heightMapTexture";
-constexpr auto ufColorMapTextureName = "colorMapTexture";
-constexpr auto ufModelToWorldMatrixName = "modelToWorldMatrix";
-constexpr auto ufWorldToViewMatrixName = "worldToViewMatrix";
-constexpr auto ufViewToClipMatrixName = "viewToClipMatrix";
-constexpr auto ufNormalMatrix = "normalMatrix";
-constexpr auto ufWorldLightName = "worldLight";
-constexpr auto ufAmbientConstantName = "ambientConstant";
-constexpr auto ufterrainGridPointSpacingName = "terrainGridPointSpacing";
-constexpr auto ufHeightMultiplierName = "heightMultiplier";
-
-// Lightning data
-glm::vec4 worldLightPosition(64.0f, 145.0f, 30.0f, 1.0f);
-const glm::vec3 ambientConstant(0.3f, 0.3f, 0.3f);
-
-// Terrain data
-NoiseMapData noiseMapData = {};
-std::vector<TerrainType> terrainTypes;
-float terrainGridPointSpacing = 1.0f;
-float heightMultiplier = 1.0f;
-
-Mesh terrainMesh = {};
-
-enum class RENDER_MODE { NOISE_MAP, COLOR_MAP, MESH };
-struct {
-  std::array<char, TERRAIN_NAME_SIZE> newTerrainTypeName = {};
   RENDER_MODE renderMode = RENDER_MODE::MESH;
   GLuint selectedProgramObject = -1;
   bool showImGuiDemo = false;
-  bool terrainSettingCloseButton = false;
-  bool wireframe = false;
-  bool controlLightning = false;
-} terrainSettings;
+} viewSettings;
+
+struct ControlSettings {
+  enum class CONTROL_MODE { LIGHT, CAMERA };
+  CONTROL_MODE controlMode = CONTROL_MODE::CAMERA;
+} controlSettings;
+
+// Light
+LightData lightData;
+
+// Terrain
+struct TerrainData {
+  NoiseMapData noiseMapData = {}; // Noise map settings to alter terrain
+  std::vector<TerrainType> terrainTypes;
+  float terrainGridPointSpacing = 1.0f; // Terrain scaling
+  float heightMultiplier = 1.0f;
+  int pixelsPerTriangle = 20; // How many pixels for triangle in patch edge for dynamic LOD
+} terrainData;
+
+Mesh terrainMesh = {};
+GLuint terrainGeneratorProgramObject;
+GLuint terrainDebugProgramObject;
 
 static void errorCallback(int error, const char *description) { fprintf(stderr, "Error: %s\n", description); }
 
 static void resizeWindowCallback(GLFWwindow *window, int width, int height) {
-  const auto viewToClipMatrix = glm::perspective(projectionData.fieldOfView, float(width) / float(height),
-                                                 projectionData.nearPlane, projectionData.farPlane);
-  setUniform(terrainSettings.selectedProgramObject, ufViewToClipMatrixName, viewToClipMatrix);
+  const auto viewToClipMatrix = glm::perspective(viewFrustumData.fieldOfView, float(width) / float(height),
+                                                 viewFrustumData.nearPlane, viewFrustumData.farPlane);
+  setUniform(viewSettings.selectedProgramObject, ufViewToClipMatrixName, viewToClipMatrix);
+  setUniform(terrainGeneratorProgramObject, ufViewportSizeName, glm::vec2(width, height));
   glViewport(0, 0, width, height);
 }
 
 static void cursorPosCallback(GLFWwindow *window, double xPos, double yPos) {
   glm::dvec2 mousePosition(xPos, yPos);
-  glm::dvec2 mouseDiff = mousePosition - previousMousePosition;
-  previousMousePosition = mousePosition;
+  glm::dvec2 mouseDiff = mousePosition - controlInputData.previousMousePosition;
+  controlInputData.previousMousePosition = mousePosition;
 
   GLfloat mouseSpeed = 0.001f;
   fpsCamera.yawRotation(GLfloat(mouseDiff.x * mouseSpeed));
   fpsCamera.pitchRotation(GLfloat(mouseDiff.y * mouseSpeed));
-}
-
-static void handleKeyboardInput() {
-  GLfloat cameraSpeed = 100.0f * float(frameTimeData.frameTime);
-
-  GLfloat radian = 0.017453293f; // One radian
-
-  if (keyState[GLFW_KEY_W]) {
-    if (terrainSettings.controlLightning)
-      worldLightPosition.z -= cameraSpeed;
-    else
-      fpsCamera.moveForward(cameraSpeed);
-  }
-  if (keyState[GLFW_KEY_S]) {
-    if (terrainSettings.controlLightning)
-      worldLightPosition.z += cameraSpeed;
-    else
-      fpsCamera.moveBackward(cameraSpeed);
-  }
-  if (keyState[GLFW_KEY_A]) {
-    if (terrainSettings.controlLightning)
-      worldLightPosition.x -= cameraSpeed;
-    else
-      fpsCamera.moveLeft(cameraSpeed);
-  }
-  if (keyState[GLFW_KEY_D]) {
-    if (terrainSettings.controlLightning)
-      worldLightPosition.x += cameraSpeed;
-    else
-      fpsCamera.moveRight(cameraSpeed);
-  }
-  if (keyState[GLFW_KEY_Q]) {
-    if (terrainSettings.controlLightning)
-      worldLightPosition.y += cameraSpeed;
-    else
-      fpsCamera.moveUp(cameraSpeed);
-  }
-  if (keyState[GLFW_KEY_E]) {
-    if (terrainSettings.controlLightning)
-      worldLightPosition.y -= cameraSpeed;
-    else
-      fpsCamera.moveDown(cameraSpeed);
-  }
-  if (keyState[GLFW_KEY_J])
-    fpsCamera.yawRotation(-radian);
-  if (keyState[GLFW_KEY_L])
-    fpsCamera.yawRotation(radian);
-  if (keyState[GLFW_KEY_I])
-    fpsCamera.pitchRotation(radian);
-  if (keyState[GLFW_KEY_K])
-    fpsCamera.pitchRotation(-radian);
 }
 
 static void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods) {
@@ -159,34 +104,36 @@ static void keyCallback(GLFWwindow *window, int key, int scancode, int action, i
 
   if (key > 0 && key < 256) {
     if (action == GLFW_PRESS) {
-      keyState[key] = true;
+      controlInputData.keyState[key] = true;
     } else if (action == GLFW_RELEASE) {
-      keyState[key] = false;
+      controlInputData.keyState[key] = false;
     }
   }
 
-  if (keyState[GLFW_KEY_M]) {
-    terrainSettings.showImGuiDemo = !terrainSettings.showImGuiDemo;
+  if (controlInputData.keyState[GLFW_KEY_M]) {
+    viewSettings.showImGuiDemo = !viewSettings.showImGuiDemo;
   }
 
   if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
     glfwSetWindowShouldClose(window, GLFW_TRUE);
 }
 
-void initTerrainTypeList() {
-  TerrainType waterTerrain = {};
-  strcpy_s(waterTerrain.name.data(), waterTerrain.name.size(), "Water");
-  waterTerrain.color = glm::vec3(0.0f, 0.0f, 1.0f);
-  waterTerrain.height = 0.3f;
+void initTerrainData() {
+  const int mapSize = 256;
+  // Only allow power of two
+  assert(mapSize && !(mapSize & (mapSize - 1)));
 
-  TerrainType landTerrain = {};
-  strcpy_s(landTerrain.name.data(), landTerrain.name.size(), "Land");
-  landTerrain.color = glm::vec3(0.0f, 1.0f, 0.0f);
-  landTerrain.height = 1.0f;
+  terrainData.noiseMapData.width = terrainData.noiseMapData.height = mapSize;
+  terrainData.noiseMapData.scale = 1.0f;
+  terrainData.noiseMapData.octaves = 4;
+  terrainData.noiseMapData.persistance = 0.5f;
+  terrainData.noiseMapData.lacunarity = 2.0f;
+  terrainData.noiseMapData.seed = 1;
+  terrainData.noiseMapData.octaveOffset = glm::vec2(0.0f);
 
-  terrainTypes.reserve(3);
-  terrainTypes.push_back(waterTerrain);
-  terrainTypes.push_back(landTerrain);
+  terrainData.terrainTypes.reserve(3);
+  terrainData.terrainTypes.push_back({"Water", glm::vec3(0.0f, 0.0f, 1.0f), 0.3f});
+  terrainData.terrainTypes.push_back({"Land", glm::vec3(0.0f, 1.0f, 0.0f), 1.0f});
 }
 
 void initMeshes(const NoiseMap &noiseMap) {
@@ -214,16 +161,16 @@ void initMeshes(const NoiseMap &noiseMap) {
 
 void initTextures(const NoiseMap &noiseMap) {
   glGenTextures(2, terrainMesh.textureHandles);
-  createTexture2D(&terrainMesh.textureHandles[0], GL_CLAMP, GL_NEAREST, noiseMapData.width, noiseMapData.height,
-                  generateNoiseMapTexture(noiseMap).data());
-  createTexture2D(&terrainMesh.textureHandles[1], GL_CLAMP, GL_NEAREST, noiseMapData.width, noiseMapData.height,
-                  generateColorMapTexture(noiseMap, terrainTypes).data());
+  createTexture2D(&terrainMesh.textureHandles[0], GL_CLAMP_TO_EDGE, GL_NEAREST, terrainData.noiseMapData.width,
+                  terrainData.noiseMapData.height, generateNoiseMapTexture(noiseMap).data());
+  createTexture2D(&terrainMesh.textureHandles[1], GL_CLAMP_TO_EDGE, GL_NEAREST, terrainData.noiseMapData.width,
+                  terrainData.noiseMapData.height, generateColorMapTexture(noiseMap, terrainData.terrainTypes).data());
 }
 
 void initShaders() {
   const auto viewToClipMatrix =
-      glm::perspective(projectionData.fieldOfView, float(windowData.width) / float(windowData.height),
-                       projectionData.nearPlane, projectionData.farPlane);
+      glm::perspective(viewFrustumData.fieldOfView, float(windowData.width) / float(windowData.height),
+                       viewFrustumData.nearPlane, viewFrustumData.farPlane);
 
   // Terrain generator shader
   std::vector<GLuint> terrainGeneratorShaderObjects;
@@ -233,13 +180,16 @@ void initShaders() {
   terrainGeneratorShaderObjects.push_back(compileShader("terrain.frag", GL_FRAGMENT_SHADER));
   terrainGeneratorProgramObject = createProgramObject(terrainGeneratorShaderObjects);
 
-  setUniform(terrainGeneratorProgramObject, ufHeightMapTextureName, 0);
+  setUniform(terrainGeneratorProgramObject, ufAmbientConstantName, lightData.ambientConstant);
   setUniform(terrainGeneratorProgramObject, ufColorMapTextureName, 1);
+  setUniform(terrainGeneratorProgramObject, ufHeightMapTextureName, 0);
+  setUniform(terrainGeneratorProgramObject, ufHeightMultiplierName, terrainData.heightMultiplier);
+  setUniform(terrainGeneratorProgramObject, ufPatchSizeName, PATCH_SIZE);
+  setUniform(terrainGeneratorProgramObject, ufPixelsPerTriangleName, terrainData.pixelsPerTriangle);
+  setUniform(terrainGeneratorProgramObject, ufTerrainGridPointSpacingName, terrainData.terrainGridPointSpacing);
+  setUniform(terrainGeneratorProgramObject, ufViewportSizeName, glm::vec2(windowData.width, windowData.height));
   setUniform(terrainGeneratorProgramObject, ufViewToClipMatrixName, viewToClipMatrix);
-  setUniform(terrainGeneratorProgramObject, ufWorldLightName, worldLightPosition);
-  setUniform(terrainGeneratorProgramObject, ufAmbientConstantName, ambientConstant);
-  setUniform(terrainGeneratorProgramObject, ufterrainGridPointSpacingName, terrainGridPointSpacing);
-  setUniform(terrainGeneratorProgramObject, ufHeightMultiplierName, heightMultiplier);
+  setUniform(terrainGeneratorProgramObject, ufWorldLightName, lightData.worldLightPosition);
 
   // Terrain noise map shader
   std::vector<GLuint> terrainDebugShaderObjects;
@@ -258,7 +208,7 @@ void initShaders() {
 void initGL() {
   initShaders();
 
-  terrainSettings.selectedProgramObject = terrainGeneratorProgramObject;
+  viewSettings.selectedProgramObject = terrainGeneratorProgramObject;
 
   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
   glEnable(GL_DEPTH_TEST); // Enable depth testing
@@ -271,20 +221,11 @@ void initGL() {
 }
 
 void updateMapTexture() {
-  noiseMapData.width = glm::clamp(noiseMapData.width, 1, noiseMapData.width);
-  noiseMapData.height = noiseMapData.width;
-
-  noiseMapData.scale = glm::clamp(noiseMapData.scale, 0.0001f, noiseMapData.scale);
-  noiseMapData.octaves = glm::clamp(noiseMapData.octaves, 1, 6);
-  noiseMapData.lacunarity = glm::clamp(noiseMapData.lacunarity, 2.0f, 4.0f);
-  noiseMapData.persistance = glm::clamp(noiseMapData.persistance, 0.0f, 1.0f);
-  noiseMapData.seed = glm::clamp(noiseMapData.seed, 1, 100);
-  const auto noiseMap = generateNoiseMap(noiseMapData);
-
-  updateTexture2D(&terrainMesh.textureHandles[0], 0, 0, noiseMapData.width, noiseMapData.height,
+  const auto noiseMap = generateNoiseMap(terrainData.noiseMapData);
+  updateTexture2D(&terrainMesh.textureHandles[0], 0, 0, terrainData.noiseMapData.width, terrainData.noiseMapData.height,
                   generateNoiseMapTexture(noiseMap).data());
-  updateTexture2D(&terrainMesh.textureHandles[1], 0, 0, noiseMapData.width, noiseMapData.height,
-                  generateColorMapTexture(noiseMap, terrainTypes).data());
+  updateTexture2D(&terrainMesh.textureHandles[1], 0, 0, terrainData.noiseMapData.width, terrainData.noiseMapData.height,
+                  generateColorMapTexture(noiseMap, terrainData.terrainTypes).data());
 }
 
 void renderImGuiInterface() {
@@ -292,52 +233,62 @@ void renderImGuiInterface() {
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
 
-  if (terrainSettings.showImGuiDemo)
-    ImGui::ShowDemoWindow(&terrainSettings.showImGuiDemo);
+  if (viewSettings.showImGuiDemo)
+    ImGui::ShowDemoWindow(&viewSettings.showImGuiDemo);
 
-  ImGui::Begin("Terrain settings", &terrainSettings.terrainSettingCloseButton,
+  ImGui::Begin("Settings", nullptr,
                ImGuiWindowFlags_AlwaysAutoResize); // Create a window called "Noise map settings"
                                                    // and append into it.
+
+  // View settings
   ImGui::Text("Render mode");
   if (ImGui::Button("Noise Map")) {
-    terrainSettings.renderMode = RENDER_MODE::NOISE_MAP;
-    terrainSettings.selectedProgramObject = terrainDebugProgramObject;
+    viewSettings.renderMode = ViewSettings::RENDER_MODE::NOISE_MAP;
+    viewSettings.selectedProgramObject = terrainDebugProgramObject;
     updateMapTexture();
   }
   ImGui::SameLine();
   if (ImGui::Button("Color Map")) {
-    terrainSettings.renderMode = RENDER_MODE::COLOR_MAP;
-    terrainSettings.selectedProgramObject = terrainDebugProgramObject;
+    viewSettings.renderMode = ViewSettings::RENDER_MODE::COLOR_MAP;
+    viewSettings.selectedProgramObject = terrainDebugProgramObject;
     updateMapTexture();
   }
   ImGui::SameLine();
   if (ImGui::Button("Mesh")) {
-    terrainSettings.wireframe = false;
-    terrainSettings.renderMode = RENDER_MODE::MESH;
-    terrainSettings.selectedProgramObject = terrainGeneratorProgramObject;
+    viewSettings.renderMode = ViewSettings::RENDER_MODE::MESH;
+    viewSettings.selectedProgramObject = terrainGeneratorProgramObject;
     updateMapTexture();
   }
   ImGui::SameLine();
   if (ImGui::Button("Wireframe Mesh")) {
-    terrainSettings.wireframe = true;
-    terrainSettings.renderMode = RENDER_MODE::MESH;
-    terrainSettings.selectedProgramObject = terrainGeneratorProgramObject;
+    viewSettings.renderMode = ViewSettings::RENDER_MODE::WIREFRAME;
+    viewSettings.selectedProgramObject = terrainGeneratorProgramObject;
     updateMapTexture();
   }
 
-  if (ImGui::Button("Light control")) {
-    terrainSettings.controlLightning = !terrainSettings.controlLightning;
+  ImGui::Text("Control mode");
+  if (ImGui::Button("Camera")) {
+    controlSettings.controlMode = ControlSettings::CONTROL_MODE::CAMERA;
+  }
+  ImGui::SameLine();
+  if (ImGui::Button("Light")) {
+    controlSettings.controlMode = ControlSettings::CONTROL_MODE::LIGHT;
+  }
+
+  ImGui::Text("Terrain settings");
+  if (ImGui::SliderInt("Pixels per triangle", &terrainData.pixelsPerTriangle, 1, 30)) {
+    setUniform(terrainGeneratorProgramObject, ufPixelsPerTriangleName, terrainData.pixelsPerTriangle);
   }
 
   ImGui::SetNextItemOpen(true, ImGuiCond_FirstUseEver);
   if (ImGui::TreeNode("Noise Map settings")) {
-    if (ImGui::SliderFloat("Scale", &noiseMapData.scale, 1.0f, 10.0f) ||
-        ImGui::SliderInt("Octaves", &noiseMapData.octaves, 1, 6) ||
-        ImGui::SliderFloat("Persistance", &noiseMapData.persistance, 0.0f, 1.0f) ||
-        ImGui::SliderFloat("Lacunarity", &noiseMapData.lacunarity, 2.0f, 4.0f) ||
-        ImGui::SliderInt("Seed", &noiseMapData.seed, 1, 100) ||
-        ImGui::SliderFloat("Octave offset X", &noiseMapData.octaveOffset.x, 1.0f, 2000.0f) ||
-        ImGui::SliderFloat("Octave offset Y", &noiseMapData.octaveOffset.y, 1.0f, 2000.0f)) {
+    if (ImGui::SliderFloat("Scale", &terrainData.noiseMapData.scale, 1.0f, 10.0f) ||
+        ImGui::SliderInt("Octaves", &terrainData.noiseMapData.octaves, 1, 6) ||
+        ImGui::SliderFloat("Persistance", &terrainData.noiseMapData.persistance, 0.0f, 1.0f) ||
+        ImGui::SliderFloat("Lacunarity", &terrainData.noiseMapData.lacunarity, 2.0f, 4.0f) ||
+        ImGui::SliderInt("Seed", &terrainData.noiseMapData.seed, 1, 100) ||
+        ImGui::SliderFloat("Octave offset X", &terrainData.noiseMapData.octaveOffset.x, 1.0f, 2000.0f) ||
+        ImGui::SliderFloat("Octave offset Y", &terrainData.noiseMapData.octaveOffset.y, 1.0f, 2000.0f)) {
       updateMapTexture();
     }
 
@@ -345,19 +296,20 @@ void renderImGuiInterface() {
   }
 
   ImGui::SetNextItemOpen(true, ImGuiCond_FirstUseEver);
-  if (ImGui::TreeNode("Terrain settings")) {
-    if (ImGui::SliderFloat("Terrain grid spacing", &terrainGridPointSpacing, 0.0f, 10.0f)) {
-      setUniform(terrainGeneratorProgramObject, ufterrainGridPointSpacingName, terrainGridPointSpacing);
+  if (ImGui::TreeNode("Terrain type settings")) {
+    if (ImGui::SliderFloat("Terrain grid spacing", &terrainData.terrainGridPointSpacing, 0.0f, 10.0f)) {
+      setUniform(terrainGeneratorProgramObject, ufTerrainGridPointSpacingName, terrainData.terrainGridPointSpacing);
     }
-    if (ImGui::SliderFloat("Height multiplier", &heightMultiplier, 0.0f, 500.0f)) {
-      setUniform(terrainGeneratorProgramObject, ufHeightMultiplierName, heightMultiplier);
+    if (ImGui::SliderFloat("Height multiplier", &terrainData.heightMultiplier, 0.0f, 100.0f)) {
+      setUniform(terrainGeneratorProgramObject, ufHeightMultiplierName, terrainData.heightMultiplier);
     }
 
-    for (size_t i = 0; i < terrainTypes.size(); i++) {
+    for (size_t i = 0; i < terrainData.terrainTypes.size(); i++) {
       ImGui::PushID(int(i));
-      if (ImGui::TreeNode(terrainTypes[i].name.data())) {
-        if (ImGui::SliderFloat("Height", &terrainTypes[i].height, 0.0f, 1.0f) ||
-            ImGui::ColorEdit3("Color", glm::value_ptr(terrainTypes[i].color), ImGuiColorEditFlags_NoInputs)) {
+      if (ImGui::TreeNode(terrainData.terrainTypes[i].name.data())) {
+        if (ImGui::SliderFloat("Height", &terrainData.terrainTypes[i].height, 0.0f, 1.0f) ||
+            ImGui::ColorEdit3("Color", glm::value_ptr(terrainData.terrainTypes[i].color),
+                              ImGuiColorEditFlags_NoInputs)) {
           updateMapTexture();
         }
         ImGui::TreePop();
@@ -375,24 +327,109 @@ void renderImGuiInterface() {
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
+/*
+float screenSphereSize(glm::vec4 p1, glm::vec4 p2) {
+
+  glm::vec4 viewCenter = (p1 + p2) * 0.5f;
+  glm::vec4 viewUp = viewCenter;
+  viewUp.y += glm::distance(p1, p2);
+  glm::vec4 p1Proj = viewCenter;
+  glm::vec4 p2Proj = viewUp;
+
+  glm::vec4 p1NDC, p2NDC;
+  p1NDC = p1Proj / p1Proj.w;
+  p2NDC = p2Proj / p2Proj.w;
+
+  glm::vec2 p1NDCVec2(p1NDC.x, p1NDC.y);
+  glm::vec2 p2NDCVec2(p2NDC.x, p2NDC.y);
+
+  const auto viewportSize = glm::vec2(windowData.width, windowData.height);
+  const auto var1 = glm::length((p1NDCVec2 - p2NDCVec2) * viewportSize * 0.5f);
+  const auto var2 = var1 / terrainData.pixelsPerTriangle;
+
+  const auto test = glm::clamp(
+      glm::length((p1NDCVec2 - p2NDCVec2) * viewportSize * 0.5f) / terrainData.pixelsPerTriangle, 1.0f, 64.0f);
+
+  return test;
+}
+
+const float frustumTolerance = 0.0001f;
+bool patchEdgeInFrustum(const glm::vec4 p1, const glm::vec4 p2) {
+  if ((p1.x >= (-p1.w - frustumTolerance) || p2.x >= (-p2.w - frustumTolerance)) &&
+      (p1.x <= (p1.w + frustumTolerance) || p2.x <= (p2.w + frustumTolerance)) &&
+      (p1.z >= (-p1.w - frustumTolerance) || p2.z >= (-p2.w - frustumTolerance)) &&
+      (p1.z <= (p1.w + frustumTolerance) || p2.z <= (p2.w + frustumTolerance))) {
+    return true;
+  }
+  return false;
+}*/
+
 void renderScene() {
   glfwPollEvents();
-  handleKeyboardInput();
+  if (controlSettings.controlMode == ControlSettings::CONTROL_MODE::CAMERA) {
+    handleCameraInput(&fpsCamera, controlInputData, frameTimeData.frameTime);
+  } else if (controlSettings.controlMode == ControlSettings::CONTROL_MODE::LIGHT) {
+    handleLightInput(&lightData, controlInputData, frameTimeData.frameTime);
+  }
+
+  /////
+ /* glm::vec2 tSize(terrainData.noiseMapData.width, terrainData.noiseMapData.height);
+  float div = PATCH_SIZE / tSize.x;
+
+  for (uint32_t i = 0; i < terrainMesh.vertices.size(); i++) {
+    const auto patchLowerLeftCorner = terrainMesh.vertices[i].position2f;
+
+    glm::vec2 patchCornersTexCoord[4];
+    patchCornersTexCoord[0] = patchLowerLeftCorner;
+    patchCornersTexCoord[1] = glm::vec2(patchLowerLeftCorner.x, patchLowerLeftCorner.y + div);
+    patchCornersTexCoord[2] = glm::vec2(patchLowerLeftCorner.x + div, patchLowerLeftCorner.y);
+    patchCornersTexCoord[3] = glm::vec2(patchLowerLeftCorner.x + div, patchLowerLeftCorner.y + div);
+
+    glm::vec2 patchCorners[4];
+    for (int i = 0; i < 4; ++i) {
+      patchCorners[i] = patchCornersTexCoord[i] * tSize * terrainData.terrainGridPointSpacing;
+    }
+
+    const auto viewMatrixTest = fpsCamera.createViewMatrix();
+    const auto viewToClipMatrixTest =
+        glm::perspective(viewFrustumData.fieldOfView, float(windowData.width) / float(windowData.height),
+                         viewFrustumData.nearPlane, viewFrustumData.farPlane);
+
+    const glm::mat4 mvp = viewToClipMatrixTest * viewMatrixTest * terrainMesh.modelTransformation;
+
+    glm::vec4 clipSpacePatchCorners[4];
+    clipSpacePatchCorners[0] = mvp * glm::vec4(patchCorners[0].x, 1.0f, patchCorners[0].y, 1.0f);
+    clipSpacePatchCorners[1] = mvp * glm::vec4(patchCorners[1].x, 1.0f, patchCorners[1].y, 1.0f);
+    clipSpacePatchCorners[2] = mvp * glm::vec4(patchCorners[2].x, 1.0f, patchCorners[2].y, 1.0f);
+    clipSpacePatchCorners[3] = mvp * glm::vec4(patchCorners[3].x, 1.0f, patchCorners[3].y, 1.0f);
+
+    if (patchEdgeInFrustum(clipSpacePatchCorners[0], clipSpacePatchCorners[0 + 1]) ||
+        patchEdgeInFrustum(clipSpacePatchCorners[0], clipSpacePatchCorners[0 + 2]) ||
+        patchEdgeInFrustum(clipSpacePatchCorners[0 + 2], clipSpacePatchCorners[0 + 3]) ||
+        patchEdgeInFrustum(clipSpacePatchCorners[0 + 3], clipSpacePatchCorners[0 + 1])) {
+      std::cout << "Inside patch: " << i << std::endl;
+    } else {
+      std::cout << "Patch culled: " << i << std::endl;
+    }
+  }
+  */
+  /////
 
   // Measure time each frame
   updateFrameTime(&frameTimeData);
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-  if (terrainSettings.renderMode == RENDER_MODE::NOISE_MAP) {
+  if (viewSettings.renderMode == ViewSettings::RENDER_MODE::NOISE_MAP) {
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, terrainMesh.textureHandles[0]);
-    setUniform(terrainSettings.selectedProgramObject, ufUseNoiseMapTextureName, 1);
-  } else if (terrainSettings.renderMode == RENDER_MODE::COLOR_MAP) {
+    setUniform(viewSettings.selectedProgramObject, ufUseNoiseMapTextureName, 1);
+  } else if (viewSettings.renderMode == ViewSettings::RENDER_MODE::COLOR_MAP) {
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, terrainMesh.textureHandles[1]);
-    setUniform(terrainSettings.selectedProgramObject, ufUseNoiseMapTextureName, 0);
-  } else if (terrainSettings.renderMode == RENDER_MODE::MESH) {
+    setUniform(viewSettings.selectedProgramObject, ufUseNoiseMapTextureName, 0);
+  } else if (viewSettings.renderMode == ViewSettings::RENDER_MODE::MESH ||
+             viewSettings.renderMode == ViewSettings::RENDER_MODE::WIREFRAME) {
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, terrainMesh.textureHandles[0]); // Color map
     glActiveTexture(GL_TEXTURE1);
@@ -400,17 +437,17 @@ void renderScene() {
   }
 
   glBindVertexArray(terrainMesh.vaoHandle);
-  glUseProgram(terrainSettings.selectedProgramObject);
+  glUseProgram(viewSettings.selectedProgramObject);
   {
-    setUniform(terrainSettings.selectedProgramObject, ufModelToWorldMatrixName, terrainMesh.modelTransformation);
+    setUniform(viewSettings.selectedProgramObject, ufModelToWorldMatrixName, terrainMesh.modelTransformation);
 
     const auto viewMatrix = fpsCamera.createViewMatrix();
-    setUniform(terrainSettings.selectedProgramObject, ufWorldToViewMatrixName, viewMatrix);
-    setUniform(terrainSettings.selectedProgramObject, ufNormalMatrix,
+    setUniform(viewSettings.selectedProgramObject, ufWorldToViewMatrixName, viewMatrix);
+    setUniform(viewSettings.selectedProgramObject, ufNormalMatrix,
                glm::transpose(glm::inverse(glm::mat3(viewMatrix * terrainMesh.modelTransformation))));
-    setUniform(terrainGeneratorProgramObject, ufWorldLightName, worldLightPosition);
+    setUniform(terrainGeneratorProgramObject, ufWorldLightName, lightData.worldLightPosition);
 
-    if (terrainSettings.wireframe) {
+    if (viewSettings.renderMode == ViewSettings::RENDER_MODE::WIREFRAME) {
       glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     } else {
       glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -457,7 +494,7 @@ void initScene() {
   // Disable mouse movements for now...
   // glfwSetCursorPosCallback(windowData.window, cursorPosCallback);
   glfwSetCursorPos(windowData.window, windowData.center.x, windowData.center.y);
-  previousMousePosition = windowData.center;
+  controlInputData.previousMousePosition = windowData.center;
 
   glfwMakeContextCurrent(windowData.window);
 
@@ -475,21 +512,12 @@ void initScene() {
 
   // glfwSwapInterval(1); // Gives input latency
 
-  initTerrainTypeList();
-
   initImGui(windowData.window, "#version 130");
 
   initGL();
 
-  noiseMapData.width = noiseMapData.height = 256;
-  noiseMapData.scale = 1.0f;
-  noiseMapData.octaves = 4;
-  noiseMapData.persistance = 0.5f;
-  noiseMapData.lacunarity = 2.0f;
-  noiseMapData.seed = 1;
-  noiseMapData.octaveOffset = glm::vec2(0.0f);
-
-  const auto noiseMap = generateNoiseMap(noiseMapData);
+  initTerrainData();
+  const auto noiseMap = generateNoiseMap(terrainData.noiseMapData);
   initMeshes(noiseMap);
   initTextures(noiseMap);
 

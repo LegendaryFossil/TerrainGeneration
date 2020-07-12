@@ -9,6 +9,8 @@
 
 constexpr auto MAX_TEXTURES = 10;
 
+constexpr auto PATCH_SIZE = 64.0f;
+
 struct Vertex {
   union {
     glm::vec2 position2f;
@@ -24,7 +26,7 @@ struct Mesh {
   std::vector<Vertex> vertices;
   std::vector<uint32_t> indices;
 
-  glm::mat4 modelTransformation;
+  glm::mat4 modelTransformation = glm::mat4(1.0f);
 
   GLuint vaoHandle; // Vertex array object
   GLuint vboHandle; // Vertex buffer object

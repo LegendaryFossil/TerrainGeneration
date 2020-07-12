@@ -7,7 +7,6 @@
 
 #include "glm/glm.hpp"
 
-#include "FastNoiseSIMD/FastNoiseSIMD.h"
 #include "FastNoise/FastNoise.h"
 
 /*

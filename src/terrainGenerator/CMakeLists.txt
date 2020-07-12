@@ -3,10 +3,13 @@ set(NAME "TerrainGenerator")
 set(SRC
 	"camera.cpp"
 	"camera.h"
+	"lightDefs.h"
 	"meshGenerator.cpp"
 	"meshGenerator.h"
 	"noiseMapGenerator.cpp"
 	"noiseMapGenerator.h"
+	"sceneControl.h"
+	"sceneControl.cpp"
 	"shaderLoader.cpp"
 	"shaderLoader.h"
 	"terrainDefs.h"
@@ -15,6 +18,7 @@ set(SRC
 	"textureGenerator.h"
 	"timeMeasureUtils.cpp"
 	"timeMeasureUtils.h"
+	"uniformDefs.h"
 )
 
 set(IMGUI_PATH ImGui)

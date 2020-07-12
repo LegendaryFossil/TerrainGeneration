@@ -4,11 +4,10 @@
 
 #include "glm/glm.hpp"
 
-#include "noiseMapGenerator.h"
-
 #include "GL/glew.h"
 
 struct TerrainType;
+using NoiseMap = std::vector<std::vector<float>>;
 
 void createTexture2D(GLuint *texHandle, GLenum wrapMode, GLenum filterMode, const int width, const int height,
                      const void *pixels);
