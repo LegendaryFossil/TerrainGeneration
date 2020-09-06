@@ -9,8 +9,6 @@
 
 constexpr auto MAX_TEXTURES = 10;
 
-constexpr auto PATCH_SIZE = 64.0f;
-
 struct Vertex {
   union {
     glm::vec2 position2f;

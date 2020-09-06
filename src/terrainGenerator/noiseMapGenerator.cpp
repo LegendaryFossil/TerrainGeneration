@@ -80,8 +80,8 @@ NoiseMap generateNoiseMap(const NoiseMapData &noiseMapData) {
 
       for (int octave = 0; octave < noiseMapData.octaves; ++octave) {
         // Minus half map dimensions to scale in to the center instead of corner
-        const auto sampleX = (j - halfMapWidth) / noiseMapData.scale * frequency + noiseMapData.octaveOffset.x;
-        const auto sampleY = (i - halfMapHeight) / noiseMapData.scale * frequency + noiseMapData.octaveOffset.y;
+        const auto sampleX = (j - halfMapWidth + noiseMapData.octaveOffset.x) / noiseMapData.scale * frequency;
+        const auto sampleY = (i - halfMapHeight - noiseMapData.octaveOffset.y) / noiseMapData.scale * frequency;
 
         const auto perlinNoiseValue = fastNoise.GetNoise(sampleX, sampleY);
         noiseHeight += perlinNoiseValue * amplitude;
