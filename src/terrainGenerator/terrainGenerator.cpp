@@ -194,8 +194,8 @@ void initShaders() {
   terrainGeneratorProgramObject = createProgramObject(terrainGeneratorShaderObjects);
 
   setUniform(terrainGeneratorProgramObject, ufAmbientConstantName, lightData.ambientConstant);
-  setUniform(terrainGeneratorProgramObject, ufColorMapTextureName, 1);
   setUniform(terrainGeneratorProgramObject, ufHeightMapTextureName, 0);
+  setUniform(terrainGeneratorProgramObject, ufColorMapTextureName, 1);
   setUniform(terrainGeneratorProgramObject, ufHeightMultiplierName, terrainData.heightMultiplier);
   setUniform(terrainGeneratorProgramObject, ufPatchSizeName, PATCH_SIZE);
   setUniform(terrainGeneratorProgramObject, ufPixelsPerTriangleName, terrainData.pixelsPerTriangle);
@@ -207,7 +207,7 @@ void initShaders() {
   // Terrain noise map shader
   std::vector<GLuint> terrainDebugShaderObjects;
   terrainDebugShaderObjects.push_back(compileShader("terrain.vert", GL_VERTEX_SHADER));
-  terrainDebugShaderObjects.push_back(compileShader("terrain.tesc", GL_TESS_CONTROL_SHADER));
+  terrainDebugShaderObjects.push_back(compileShader("terrainDebug.tesc", GL_TESS_CONTROL_SHADER));
   terrainDebugShaderObjects.push_back(compileShader("terrainDebug.tese", GL_TESS_EVALUATION_SHADER));
   terrainDebugShaderObjects.push_back(compileShader("terrainDebug.frag", GL_FRAGMENT_SHADER));
   terrainDebugProgramObject = createProgramObject(terrainDebugShaderObjects);
@@ -255,28 +255,24 @@ void renderImGuiInterface() {
 
   // View settings
   ImGui::Text("Render mode");
-  if (ImGui::Button("Noise Map")) { // Does not work
+  if (ImGui::Button("Noise Map")) {
     viewSettings.renderMode = ViewSettings::RENDER_MODE::NOISE_MAP;
     viewSettings.selectedProgramObject = terrainDebugProgramObject;
-    updateMapTexture();
   }
   ImGui::SameLine();
-  if (ImGui::Button("Color Map")) { // Does not work
+  if (ImGui::Button("Color Map")) {
     viewSettings.renderMode = ViewSettings::RENDER_MODE::COLOR_MAP;
     viewSettings.selectedProgramObject = terrainDebugProgramObject;
-    updateMapTexture();
   }
   ImGui::SameLine();
   if (ImGui::Button("Mesh")) {
     viewSettings.renderMode = ViewSettings::RENDER_MODE::MESH;
     viewSettings.selectedProgramObject = terrainGeneratorProgramObject;
-    updateMapTexture();
   }
   ImGui::SameLine();
   if (ImGui::Button("Wireframe Mesh")) {
     viewSettings.renderMode = ViewSettings::RENDER_MODE::WIREFRAME;
     viewSettings.selectedProgramObject = terrainGeneratorProgramObject;
-    updateMapTexture();
   }
 
   ImGui::Text("Control mode");

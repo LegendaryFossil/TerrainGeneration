@@ -3,8 +3,9 @@ set(SHADERS
 	"terrain.tesc"
 	"terrain.tese"
 	"terrain.frag"
-	"terrainDebug.tese"
 	"terrainDebug.frag"
+	"terrainDebug.tesc"
+	"terrainDebug.tese"
 )
 
 install(FILES ${SHADERS} DESTINATION "${TERRAIN_GENERATOR_EXE_PATH}/resources/shaders")
