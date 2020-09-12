@@ -5,10 +5,10 @@
 #include "glm/glm.hpp"
 
 #include "GL/glew.h"
+#include "noiseMapGenerator.h"
 
 struct TerrainData;
 struct TerrainType;
-using NoiseMap = std::vector<std::vector<float>>;
 
 void createTexture2D(GLuint *texHandle, GLenum wrapMode, GLenum filterMode, const int width, const int height,
                      const void *pixels);
@@ -18,5 +18,3 @@ void updateTexture2D(GLuint *texHandle, const int offsetX, const int offsetY, co
 std::vector<glm::vec3> generateNoiseMapTexture(const NoiseMap &noiseMap);
 
 std::vector<glm::vec3> generateColorMapTexture(const NoiseMap &noiseMap, const std::vector<TerrainType> &terrainTypes);
-
-std::vector<glm::vec3> generateRoughnessTexture(const TerrainData &terrainData);

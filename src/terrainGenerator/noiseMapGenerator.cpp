@@ -5,8 +5,6 @@
 #include <numeric>
 #include <random>
 
-#include "glm/glm.hpp"
-
 #include "FastNoise/FastNoise.h"
 
 /*
@@ -55,7 +53,7 @@ NoiseMap generateNoiseMapSIMD(const NoiseMapData &noiseMapData) {
   return noiseMap;
 }*/
 
-NoiseMap generateNoiseMap(const NoiseMapData &noiseMapData) {
+NoiseMap generateNoiseMap(const NoiseMapData &noiseMapData, const FalloffMap &falloffMap) {
   assert(noiseMapData.width == noiseMapData.height);
 
   FastNoise fastNoise(noiseMapData.seed);
@@ -104,6 +102,7 @@ NoiseMap generateNoiseMap(const NoiseMapData &noiseMapData) {
   for (size_t i = 0; i < noiseMapData.height; ++i) {
     for (size_t j = 0; j < noiseMapData.width; ++j) {
       noiseMap[i][j] = (noiseMap[i][j] - minNoiseHeight) * noiseHeightDiffInverse;
+      noiseMap[i][j] = glm::clamp(noiseMap[i][j] - falloffMap[noiseMapData.width * j + i].x, 0.0f, 1.0f);
     }
   }
 

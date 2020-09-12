@@ -1,6 +1,8 @@
 #pragma once
 #include <vector>
 
+#include "falloffMapGenerator.h"
+
 #include "glm/glm.hpp"
 
 struct NoiseMapData {
@@ -15,4 +17,4 @@ struct NoiseMapData {
 
 using NoiseMap = std::vector<std::vector<float>>;
 
-NoiseMap generateNoiseMap(const NoiseMapData &noiseMapData);
+NoiseMap generateNoiseMap(const NoiseMapData &noiseMapData, const FalloffMap &falloffMap);

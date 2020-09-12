@@ -8,6 +8,8 @@ set(SRC
 	"meshGenerator.h"
 	"noiseMapGenerator.cpp"
 	"noiseMapGenerator.h"
+	"falloffMapGenerator.cpp"
+	"falloffMapGenerator.h"
 	"sceneControl.h"
 	"sceneControl.cpp"
 	"shaderLoader.cpp"

@@ -22,8 +22,8 @@ in vec2 positionTC[];
 
 out vec2 uvTE;
 
-float getCubicValue(const float value) {
-  return value * value * value;
+float getCurveValue(const float value) {
+  return (1.8234 * value * value - 0.3233f * value - 0.0258);
 }
 
 void main(){
@@ -37,7 +37,7 @@ void main(){
 	// TerrainGridPointSpacing adds the scaling "effect"
 	vec4 res;
 	res.xz = uvTE.st * textureSize * terrainGridPointSpacing;
-	res.y = getCubicValue(texture(heightMapTexture, uvTE).r) * heightMultiplier;
+	res.y = getCurveValue(texture(heightMapTexture, uvTE).r) * heightMultiplier;
 	res.w = 1.0;
 
 	vec4 viewPosition = worldToViewMatrix * modelToWorldMatrix * res;
