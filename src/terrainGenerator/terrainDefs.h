@@ -17,7 +17,6 @@ struct TerrainType {
 // Terrain
 struct TerrainData {
   NoiseMapData noiseMapData = {}; // Noise map settings to alter terrain
-  FalloffMap falloffMap = {};
   std::vector<TerrainType> terrainTypes;
   float gridPointSpacing = 1.0f; // Terrain scaling
   float heightMultiplier = 65.0f;
@@ -26,6 +25,8 @@ struct TerrainData {
   float waterDistortionSpeed = 0.05f;
 
   int pixelsPerTriangle = 20; // How many pixels for triangle in patch edge for dynamic LOD
+
+  bool useFalloffMap = true;
 };
 
 inline TerrainData getDefaultTerrainData() {
@@ -42,8 +43,6 @@ inline TerrainData getDefaultTerrainData() {
   terrainData.noiseMapData.lacunarity = 2.0f;
   terrainData.noiseMapData.seed = 1;
   terrainData.noiseMapData.octaveOffset = glm::vec2(0.0f, 444.0f);
-
-  terrainData.falloffMap = generateFalloffMap(mapSize);
 
   terrainData.terrainTypes.reserve(3);
   terrainData.terrainTypes.push_back({"Water", glm::vec3(0.0f, 0.0f, 1.0f), 0.0f});

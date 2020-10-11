@@ -10,7 +10,7 @@ struct SceneData;
 
 constexpr auto kTerrainGeneratorProgramObjectName = "terrainGenerator";
 constexpr auto kTerrainGeneratorDebugProgramObjectName = "terrainGeneratorDebug";
-constexpr auto kWaterShaderProgramObjectName = "waterShader";
+constexpr auto kWaterProgramObjectName = "water";
 constexpr auto kQuadShaderProgramObjectName = "quad";
 
 using SceneProgramObjects = std::unordered_map<std::string, GLuint>;

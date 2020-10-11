@@ -1,22 +1,21 @@
 #include <unordered_map>
 
-#include "sceneUI.h"
-
 #include "GL/glew.h"
+#include "sceneUI.h"
 
 #include "GLFW/glfw3.h" // Include this header last always to avoid conflicts with loading new OpenGL versions
 
+#include "camera.h"
+#include "falloffMapGenerator.h"
 #include "glm\glm.hpp"
 #include "glm\gtc\matrix_transform.hpp"
 #include "glm\gtc\type_ptr.hpp"
-
-#include "camera.h"
-#include "falloffMapGenerator.h"
 #include "lightDefs.h"
 #include "meshGenerator.h"
 #include "noiseMapGenerator.h"
 #include "sceneControl.h"
 #include "sceneDefs.h"
+#include "sceneRendering.h"
 #include "sceneShaders.h"
 #include "shaderLoader.h"
 #include "terrainDefs.h"
@@ -29,22 +28,8 @@ WindowData windowData = {};
 SceneData sceneData = {};
 ControlInputData controlInputData = {};
 FrameTimeData frameTimeData = {};
-
-MeshIdToMesh meshIdToMesh;
-
 SceneProgramObjects sceneProgramObjects;
-
 SceneSettings sceneSettings = {};
-
-struct ViewFrustumData {
-  float fieldOfView = 45.0f;
-  float nearPlane = 0.1f;
-  float farPlane = 10000.0f;
-} viewFrustumData;
-
-unsigned int fboHandle;
-unsigned int fboTexture;
-unsigned int rboHandle;
 
 static void errorCallback(int error, const char *description) { fprintf(stderr, "Error: %s\n", description); }
 
@@ -55,7 +40,8 @@ static void frameBufferSizeCallBack(GLFWwindow *window, int width, int height) {
   }
 
   glViewport(0, 0, width, height);
-  setUniform(sceneProgramObjects.at(kTerrainGeneratorProgramObjectName), ufViewportSizeName, glm::vec2(width, height));
+  setUniform(sceneProgramObjects.at(kTerrainGeneratorProgramObjectName), ufViewportSizeName,
+             glm::vec2(width, height));
 }
 
 static void resizeWindowCallback(GLFWwindow *window, int width, int height) {
@@ -97,18 +83,21 @@ static void keyCallback(GLFWwindow *window, int key, int scancode, int action, i
 }
 
 static void initFrameBuffers() {
-  glGenFramebuffers(1, &fboHandle);
-  glBindFramebuffer(GL_FRAMEBUFFER, fboHandle);
+  glGenFramebuffers(1, &sceneData.sceneFrameBuffer.fboHandle);
+  glBindFramebuffer(GL_FRAMEBUFFER, sceneData.sceneFrameBuffer.fboHandle);
 
-  glGenTextures(1, &fboTexture);
-  createTexture2D(&fboTexture, GL_CLAMP_TO_EDGE, GL_NEAREST, windowData.width, windowData.height, GL_FLOAT, NULL);
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fboTexture, 0);
+  glGenTextures(1, &sceneData.sceneFrameBuffer.fboTexture);
+  createTexture2D(&sceneData.sceneFrameBuffer.fboTexture, GL_CLAMP_TO_EDGE, GL_NEAREST, windowData.width,
+                  windowData.height, GL_FLOAT, NULL);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                         sceneData.sceneFrameBuffer.fboTexture, 0);
 
-  glGenRenderbuffers(1, &rboHandle);
-  glBindRenderbuffer(GL_RENDERBUFFER, rboHandle);
+  glGenRenderbuffers(1, &sceneData.sceneFrameBuffer.rboHandle);
+  glBindRenderbuffer(GL_RENDERBUFFER, sceneData.sceneFrameBuffer.rboHandle);
   glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, windowData.width, windowData.height);
   glBindRenderbuffer(GL_RENDERBUFFER, 0);
-  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rboHandle);
+  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER,
+                            sceneData.sceneFrameBuffer.rboHandle);
 
   const auto status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
   if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
@@ -120,15 +109,8 @@ static void initFrameBuffers() {
 
 void initSceneData() {
   sceneData.terrainData = getDefaultTerrainData();
-
-  // Meshes
-  meshIdToMesh = initSceneMeshes(sceneData.terrainData);
-
-  // Shaders
+  sceneData.meshIdToMesh = initSceneMeshes(sceneData.terrainData);
   sceneProgramObjects = initSceneShaders(windowData, sceneData);
-  sceneSettings.selectedProgramObject = sceneProgramObjects.at(kTerrainGeneratorProgramObjectName);
-
-  // FBOs
   initFrameBuffers();
 }
 
@@ -143,130 +125,11 @@ void initGLStates() {
   glPatchParameteri(GL_PATCH_VERTICES, 1);
 }
 
-void renderTerrain(const glm::mat4 &viewMatrix) {
-  const auto &terrainMesh = meshIdToMesh.at(kTerrainMeshId);
-
-  if (sceneSettings.renderMode == SceneSettings::RENDER_MODE::NOISE_MAP) {
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, terrainMesh.textureHandles[0]);
-    setUniform(sceneSettings.selectedProgramObject, ufDebugSettings, glm::vec3(1.0f, 0.0f, 0.0f));
-  } else if (sceneSettings.renderMode == SceneSettings::RENDER_MODE::COLOR_MAP) {
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, terrainMesh.textureHandles[1]);
-    setUniform(sceneSettings.selectedProgramObject, ufDebugSettings, glm::vec3(0.0f, 1.0f, 0.0f));
-  } else if (sceneSettings.renderMode == SceneSettings::RENDER_MODE::FALLOFF_MAP) {
-    glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, terrainMesh.textureHandles[2]);
-    setUniform(sceneSettings.selectedProgramObject, ufDebugSettings, glm::vec3(0.0f, 0.0f, 1.0f));
-  } else if (sceneSettings.renderMode == SceneSettings::RENDER_MODE::MESH ||
-             sceneSettings.renderMode == SceneSettings::RENDER_MODE::WIREFRAME) {
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, terrainMesh.textureHandles[0]); // Height map
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, terrainMesh.textureHandles[1]); // Color map
-  }
-
-  glBindVertexArray(terrainMesh.vaoHandle);
-  glUseProgram(sceneSettings.selectedProgramObject);
-  {
-    setUniform(sceneSettings.selectedProgramObject, ufModelToWorldMatrixName, terrainMesh.modelTransformation);
-    setUniform(sceneSettings.selectedProgramObject, ufWorldToViewMatrixName, viewMatrix);
-    setUniform(sceneSettings.selectedProgramObject, ufNormalMatrix,
-               glm::transpose(glm::inverse(glm::mat3(viewMatrix * terrainMesh.modelTransformation))));
-
-    const auto viewToClipMatrix =
-        glm::perspective(viewFrustumData.fieldOfView, float(windowData.width) / float(windowData.height),
-                         viewFrustumData.nearPlane, viewFrustumData.farPlane);
-    setUniform(sceneSettings.selectedProgramObject, ufViewToClipMatrixName, viewToClipMatrix);
-
-    setUniform(sceneProgramObjects[kTerrainGeneratorProgramObjectName], ufWorldLightName,
-               sceneData.lightData.worldLightPosition);
-
-    if (sceneSettings.renderMode == SceneSettings::RENDER_MODE::WIREFRAME) {
-      glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    } else {
-      glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    }
-
-    glDrawElements(GL_PATCHES, GLsizei(terrainMesh.indices.size()), GL_UNSIGNED_INT, (void *)0);
-  }
-  glUseProgram(0);
-}
-
-void renderReflectionTexture() {
-  glBindFramebuffer(GL_FRAMEBUFFER, fboHandle);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  glEnable(GL_CLIP_DISTANCE1);
-
-  // Move camera under water (twice distance from water to camera)
-  // This assumes no model transformation affects the terrain (i.e. identity matrix transformation)
-  // and that water height is always at y = 0.0
-  const auto waterPositionY = 0.0f;
-  auto cameraPosition = sceneData.fpsCamera.cameraPosition();
-  const auto distanceToMoveY = 2.0f * (sceneData.fpsCamera.cameraPosition().y - waterPositionY);
-  cameraPosition.y -= distanceToMoveY;
-  sceneData.fpsCamera.setCameraPosition(cameraPosition);
-  sceneData.fpsCamera.invertPitch();
-
-  // Render to texture
-  renderTerrain(sceneData.fpsCamera.createViewMatrix());
-
-  // Change camera back to original state
-  cameraPosition.y += distanceToMoveY;
-  sceneData.fpsCamera.setCameraPosition(cameraPosition);
-  sceneData.fpsCamera.invertPitch();
-
-  glDisable(GL_CLIP_DISTANCE1);
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
-
-void renderWater() {
-  const auto waterProgramObject = sceneProgramObjects[kWaterShaderProgramObjectName];
-  const auto &waterMesh = meshIdToMesh.at(kWaterMeshId);
-
-  glBindVertexArray(waterMesh.vaoHandle);
-  glUseProgram(waterProgramObject);
-  {
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, fboTexture); // Scene texture
-
-    setUniform(waterProgramObject, ufModelToWorldMatrixName, waterMesh.modelTransformation);
-
-    setUniform(waterProgramObject, ufWorldToViewMatrixName, sceneData.fpsCamera.createViewMatrix());
-
-    setUniform(waterProgramObject, ufViewToClipMatrixName,
-               glm::perspective(viewFrustumData.fieldOfView, float(windowData.width) / float(windowData.height),
-                                viewFrustumData.nearPlane, viewFrustumData.farPlane));
-
-    glDrawElements(GL_TRIANGLES, GLsizei(waterMesh.indices.size()), GL_UNSIGNED_INT, (void *)0);
-  }
-  glUseProgram(0);
-}
-
-void renderQuad() {
-  const auto quadProgramObject = sceneProgramObjects.at(kQuadShaderProgramObjectName);
-  const auto &quadMesh = meshIdToMesh.at(kQuadMeshId);
-
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, fboTexture);
-
-  glBindVertexArray(quadMesh.vaoHandle);
-  glUseProgram(quadProgramObject);
-  {
-    setUniform(quadProgramObject, ufModelToWorldMatrixName, quadMesh.modelTransformation);
-
-    setUniform(quadProgramObject, ufWorldToViewMatrixName, sceneData.fpsCamera.createViewMatrix());
-
-    setUniform(quadProgramObject, ufViewToClipMatrixName,
-               glm::perspective(viewFrustumData.fieldOfView, float(windowData.width) / float(windowData.height),
-                                viewFrustumData.nearPlane, viewFrustumData.farPlane));
-
-    glDrawElements(GL_TRIANGLES, GLsizei(quadMesh.indices.size()), GL_UNSIGNED_INT, (void *)0);
-  }
-  glUseProgram(0);
-}
-
 void renderScene() {
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+  handleSceneUiInput(&sceneSettings, &sceneData.terrainData, &sceneData.meshIdToMesh, sceneProgramObjects);
+
   glfwPollEvents();
 
   if (sceneSettings.controlMode == SceneSettings::CONTROL_MODE::CAMERA) {
@@ -278,31 +141,48 @@ void renderScene() {
   // Measure time each frame
   updateFrameTime(&frameTimeData);
 
-  renderReflectionTexture();
-
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  glActiveTexture(GL_TEXTURE3);
-  glBindTexture(GL_TEXTURE_2D, fboTexture); // Scene texture
-  glActiveTexture(GL_TEXTURE4);
-  glBindTexture(GL_TEXTURE_2D, meshIdToMesh.at(kTerrainMeshId).textureHandles[3]);
-  sceneData.terrainData.waterDistortionMoveFactor +=
-      sceneData.terrainData.waterDistortionSpeed * float(frameTimeData.frameTime);
-  sceneData.terrainData.waterDistortionMoveFactor = std::fmod(sceneData.terrainData.waterDistortionMoveFactor, 1.0f);
-
-  setUniform(sceneSettings.selectedProgramObject, ufWaterDistortionMoveFactorName,
-             sceneData.terrainData.waterDistortionMoveFactor);
-  renderTerrain(sceneData.fpsCamera.createViewMatrix());
-
-  // renderQuad();
+  const auto viewToClipMatrix = glm::perspective(
+      sceneData.viewFrustumData.fieldOfView, float(windowData.width) / float(windowData.height),
+      sceneData.viewFrustumData.nearPlane, sceneData.viewFrustumData.farPlane);
+  switch (sceneSettings.renderMode) {
+  case SceneSettings::RENDER_MODE::NOISE_MAP:
+    renderNoiseMap(sceneData.meshIdToMesh.at(kTerrainMeshId), sceneData.fpsCamera.createViewMatrix(),
+                   viewToClipMatrix, sceneProgramObjects.at(kTerrainGeneratorDebugProgramObjectName));
+    break;
+  case SceneSettings::RENDER_MODE::COLOR_MAP:
+    renderColorMap(sceneData.meshIdToMesh.at(kTerrainMeshId), sceneData.fpsCamera.createViewMatrix(),
+                   viewToClipMatrix, sceneProgramObjects.at(kTerrainGeneratorDebugProgramObjectName));
+    break;
+  case SceneSettings::RENDER_MODE::FALLOFF_MAP:
+    renderFalloffMap(sceneData.meshIdToMesh.at(kTerrainMeshId), sceneData.fpsCamera.createViewMatrix(),
+                     viewToClipMatrix, sceneProgramObjects.at(kTerrainGeneratorDebugProgramObjectName));
+    break;
+  case SceneSettings::RENDER_MODE::MESH: {
+    renderTerrain(&sceneData, frameTimeData.frameTime, viewToClipMatrix, false,
+                  sceneProgramObjects.at(kTerrainGeneratorProgramObjectName));
+    /*renderQuad(sceneData.meshIdToMesh.at(kQuadMeshId), sceneData.sceneFrameBuffer.fboTexture,
+               sceneData.fpsCamera.createViewMatrix(), viewToClipMatrix,
+               sceneProgramObjects.at(kQuadShaderProgramObjectName));
+    renderWater(sceneData.meshIdToMesh.at(kWaterMeshId), sceneData.sceneFrameBuffer.fboTexture,
+                sceneData.fpsCamera.createViewMatrix(), viewToClipMatrix,
+                sceneProgramObjects.at(kWaterProgramObjectName));*/
+  } break;
+  case SceneSettings::RENDER_MODE::WIREFRAME:
+    renderTerrain(&sceneData, frameTimeData.frameTime, viewToClipMatrix, true,
+                  sceneProgramObjects.at(kTerrainGeneratorProgramObjectName));
+    break;
+  default:
+    assert(false);
+    break;
+  }
 
   // renderWater();
 
-  handleSceneUiInput(&sceneSettings, &sceneData.terrainData, &meshIdToMesh, sceneProgramObjects);
   glfwSwapBuffers(windowData.window);
 }
 
 void freeResources() {
-  for (auto &[meshId, mesh] : meshIdToMesh) {
+  for (auto &[meshId, mesh] : sceneData.meshIdToMesh) {
     glDeleteBuffers(1, &mesh.vboHandle);
     glDeleteBuffers(1, &mesh.iboHandle);
 
@@ -311,7 +191,7 @@ void freeResources() {
     }
   }
 
-  glDeleteBuffers(1, &fboHandle);
+  glDeleteBuffers(1, &sceneData.sceneFrameBuffer.fboHandle);
 
   for (const auto &[programObjectName, programObject] : sceneProgramObjects) {
     deleteProgramObject(programObject);

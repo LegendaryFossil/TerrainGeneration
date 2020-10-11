@@ -42,35 +42,29 @@ void handleSceneUiInput(SceneSettings *sceneSettings, TerrainData *terrainData, 
   ImGui::Text("Render mode");
   if (ImGui::Button("Noise Map")) {
     sceneSettings->renderMode = SceneSettings::RENDER_MODE::NOISE_MAP;
-    sceneSettings->selectedProgramObject = sceneProgramObjects.at(kTerrainGeneratorDebugProgramObjectName);
   }
   ImGui::SameLine();
   if (ImGui::Button("Color Map")) {
     sceneSettings->renderMode = SceneSettings::RENDER_MODE::COLOR_MAP;
-    sceneSettings->selectedProgramObject = sceneProgramObjects.at(kTerrainGeneratorDebugProgramObjectName);
   }
   ImGui::SameLine();
   if (ImGui::Button("Falloff Map")) {
     sceneSettings->renderMode = SceneSettings::RENDER_MODE::FALLOFF_MAP;
-    sceneSettings->selectedProgramObject = sceneProgramObjects.at(kTerrainGeneratorDebugProgramObjectName);
   }
   ImGui::SameLine();
   if (ImGui::Button("Mesh")) {
     sceneSettings->renderMode = SceneSettings::RENDER_MODE::MESH;
-    sceneSettings->selectedProgramObject = sceneProgramObjects.at(kTerrainGeneratorProgramObjectName);
   }
   ImGui::SameLine();
   if (ImGui::Button("Wireframe Mesh")) {
     sceneSettings->renderMode = SceneSettings::RENDER_MODE::WIREFRAME;
-    sceneSettings->selectedProgramObject = sceneProgramObjects.at(kTerrainGeneratorProgramObjectName);
   }
 
-  ImGui::Text("Control mode");
-  if (ImGui::Button("Camera")) {
+  static int e = 0;
+  if (ImGui::RadioButton("Camera control", &e, 0)) {
     sceneSettings->controlMode = SceneSettings::CONTROL_MODE::CAMERA;
   }
-  ImGui::SameLine();
-  if (ImGui::Button("Light")) {
+  if (ImGui::RadioButton("Light control", &e, 1)) {
     sceneSettings->controlMode = SceneSettings::CONTROL_MODE::LIGHT;
   }
 
@@ -84,11 +78,16 @@ void handleSceneUiInput(SceneSettings *sceneSettings, TerrainData *terrainData, 
         ImGui::SliderInt("Seed", &terrainData->noiseMapData.seed, 1, 100) ||
         ImGui::SliderFloat("Octave offset X", &terrainData->noiseMapData.octaveOffset.x, 0.0f, 2000.0f) ||
         ImGui::SliderFloat("Octave offset Y", &terrainData->noiseMapData.octaveOffset.y, 0.0f, 2000.0f)) {
-      updateTerrainMeshTexture(&meshIdToMesh->at(kTerrainMeshId), terrainData->noiseMapData, terrainData->falloffMap,
+      updateTerrainMeshTexture(&meshIdToMesh->at(kTerrainMeshId), terrainData->noiseMapData, terrainData->useFalloffMap,
                                terrainData->terrainTypes);
     }
 
     ImGui::TreePop();
+  }
+
+  if (ImGui::Checkbox("Use falloff map", &terrainData->useFalloffMap)) {
+    updateTerrainMeshTexture(&meshIdToMesh->at(kTerrainMeshId), terrainData->noiseMapData, terrainData->useFalloffMap,
+                             terrainData->terrainTypes);
   }
 
   if (ImGui::SliderFloat("Terrain grid spacing", &terrainData->gridPointSpacing, 1.0f, 10.0f)) {
@@ -118,7 +117,7 @@ void handleSceneUiInput(SceneSettings *sceneSettings, TerrainData *terrainData, 
             ImGui::ColorEdit3("Color", glm::value_ptr(terrainData->terrainTypes[i].color),
                               ImGuiColorEditFlags_NoInputs)) {
           updateTerrainMeshTexture(&meshIdToMesh->at(kTerrainMeshId), terrainData->noiseMapData,
-                                   terrainData->falloffMap, terrainData->terrainTypes);
+                                   terrainData->useFalloffMap, terrainData->terrainTypes);
         }
         ImGui::TreePop();
       }

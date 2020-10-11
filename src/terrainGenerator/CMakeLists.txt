@@ -12,6 +12,8 @@ set(SRC
 	"falloffMapGenerator.h"
 	"sceneControl.cpp"
 	"sceneControl.h"
+	"sceneRendering.cpp"
+	"sceneRendering.h"
 	"sceneShaders.cpp"
 	"sceneShaders.h"
 	"sceneDefs.h"

@@ -1,11 +1,11 @@
 #include "noiseMapGenerator.h"
 
+#include "FastNoise/FastNoise.h"
+#include "falloffMapGenerator.h"
 #include <array>
 #include <memory>
 #include <numeric>
 #include <random>
-
-#include "FastNoise/FastNoise.h"
 
 /*
 NoiseMap generateNoiseMapSIMD(const NoiseMapData &noiseMapData) {
@@ -57,7 +57,7 @@ static float getCurveValue(const float value) {
   return ((-0.635179f * value * value * value * value) + (2.35243f * value * value) + (-0.72331f * value) + -0.000937f);
 }
 
-NoiseMap generateNoiseMap(const NoiseMapData &noiseMapData, const FalloffMap &falloffMap) {
+NoiseMap generateNoiseMap(const NoiseMapData &noiseMapData, const bool useFalloffMap) {
   assert(noiseMapData.width == noiseMapData.height);
 
   FastNoise fastNoise(noiseMapData.seed);
@@ -102,11 +102,20 @@ NoiseMap generateNoiseMap(const NoiseMapData &noiseMapData, const FalloffMap &fa
     noiseMap.push_back(noiseValues);
   }
 
+  FalloffMap falloffMap;
+  if (useFalloffMap) {
+    falloffMap = generateFalloffMap(noiseMapData.width);
+  }
+
   const auto noiseHeightDiffInverse = 1.0f / (maxNoiseHeight - minNoiseHeight);
   for (size_t i = 0; i < noiseMapData.height; ++i) {
     for (size_t j = 0; j < noiseMapData.width; ++j) {
       noiseMap[i][j] = (noiseMap[i][j] - minNoiseHeight) * noiseHeightDiffInverse;
-      noiseMap[i][j] = glm::clamp(noiseMap[i][j] - falloffMap[noiseMapData.width * j + i].x, 0.0f, 1.0f);
+
+      if (useFalloffMap) {
+        noiseMap[i][j] = glm::clamp(noiseMap[i][j] - falloffMap[noiseMapData.width * j + i].x, 0.0f, 1.0f);
+      }
+
       noiseMap[i][j] = glm::clamp(getCurveValue(noiseMap[i][j]), 0.0f, 1.0f);
     }
   }

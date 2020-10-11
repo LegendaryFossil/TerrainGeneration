@@ -56,7 +56,7 @@ SceneProgramObjects initSceneShaders(const WindowData &windowData, const SceneDa
   waterShaderObjects.push_back(compileShader("water.vert", GL_VERTEX_SHADER));
   waterShaderObjects.push_back(compileShader("water.frag", GL_FRAGMENT_SHADER));
   const auto waterProgramObject =
-      programObjects.emplace(kWaterShaderProgramObjectName, createProgramObject(waterShaderObjects)).first->second;
+      programObjects.emplace(kWaterProgramObjectName, createProgramObject(waterShaderObjects)).first->second;
 
   setUniform(waterProgramObject, ufSceneTextureName, 0);
 

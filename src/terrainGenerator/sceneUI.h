@@ -16,7 +16,6 @@ struct SceneSettings {
   RENDER_MODE renderMode = RENDER_MODE::MESH;
   CONTROL_MODE controlMode = CONTROL_MODE::CAMERA;
 
-  GLuint selectedProgramObject = GLuint(-1);
   bool useFalloffMap = false;
   bool showImGuiDemo = false;
 };

@@ -7,6 +7,12 @@
 
 #include "GL\glew.h"
 
+struct ViewFrustumData {
+  float fieldOfView = 45.0f;
+  float nearPlane = 0.1f;
+  float farPlane = 10000.0f;
+};
+
 class Camera {
 public:
   Camera();
