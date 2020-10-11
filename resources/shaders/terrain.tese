@@ -14,17 +14,15 @@ uniform mat4 viewToClipMatrix;
 
 uniform vec4 worldLight;
 
-// Vertex position and light seen from the camera
-out vec3 eyePosition;
-out vec3 eyeLight;
+uniform vec4 horizontalClipPlane;
 
 in vec2 positionTC[];
 
-out vec2 uvTE;
-
-float getCurveValue(const float value) {
-  return (1.8234 * value * value - 0.3233f * value - 0.0258);
-}
+out float isWaterTE; // If the vertex is water
+out vec2 uvTE; // Texture coordinates
+out vec3 eyePositionTE; // Vertex position as seen from camera
+out vec3 eyeLightTE; // Light as seen from the camera
+out vec4 clipSpacePosTE; // Clip space vertex
 
 void main(){
 	ivec2 textureSize = textureSize(heightMapTexture, 0);
@@ -35,16 +33,26 @@ void main(){
 	
 	// Compute vertex positions [0, 1] -> [0, textureSize * terrainGridPointSpacing]
 	// TerrainGridPointSpacing adds the scaling "effect"
-	vec4 res;
-	res.xz = uvTE.st * textureSize * terrainGridPointSpacing;
-	res.y = getCurveValue(texture(heightMapTexture, uvTE).r) * heightMultiplier;
-	res.w = 1.0;
+	vec4 vertex;
+	vertex.xz = uvTE.st * textureSize * terrainGridPointSpacing;
+	vertex.y = texture(heightMapTexture, uvTE).r * heightMultiplier;
+	vertex.w = 1.0;
 
-	vec4 viewPosition = worldToViewMatrix * modelToWorldMatrix * res;
+	if(vertex.y <= 0.0) {
+		isWaterTE = 1.0;
+	} else {
+		isWaterTE = 0.0;
+	}
+
+	vec4 worldPosition = modelToWorldMatrix * vertex;
+	gl_ClipDistance[1] = dot(worldPosition, horizontalClipPlane);
+
+	vec4 viewPosition = worldToViewMatrix * worldPosition;
 		
-	eyePosition = viewPosition.xyz;
-	eyeLight = (worldToViewMatrix*worldLight).xyz; // Move this to fragment shader?
+	eyePositionTE = viewPosition.xyz;
+	eyeLightTE = (worldToViewMatrix*worldLight).xyz;
 
-	gl_Position = viewToClipMatrix * viewPosition;
+	clipSpacePosTE = viewToClipMatrix * viewPosition;
+	gl_Position = clipSpacePosTE;
 }
 

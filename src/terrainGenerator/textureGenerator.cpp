@@ -1,25 +1,35 @@
 #include "textureGenerator.h"
 
-#include "terrainDefs.h"
-
 #include "GL/glew.h"
 
+#include "terrainDefs.h"
+#include "utils.h"
+
+#include "stb_image.h"
+
+const std::string texturePath(getExePath() + "/resources/textures/");
+
+void loadTexture(const std::string &textureName, int *width, int *height, unsigned char **pixelData) {
+  int numOfColorChannels;
+  *pixelData = stbi_load(std::string(texturePath + textureName).c_str(), width, height, &numOfColorChannels, 0);
+}
+
 void createTexture2D(GLuint *texHandle, GLenum wrapMode, GLenum filterMode, const int width, const int height,
-                     const void *pixelData) {
+                     GLenum dataType, const void *pixelData) {
   glBindTexture(GL_TEXTURE_2D, *texHandle);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapMode);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapMode);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filterMode);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filterMode);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_FLOAT, pixelData);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, dataType, pixelData);
   glGenerateMipmap(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 void updateTexture2D(GLuint *texHandle, const int offsetX, const int offsetY, const int width, const int height,
-                     const void *pixelData) {
+                     GLenum dataType, const void *pixelData) {
   glBindTexture(GL_TEXTURE_2D, *texHandle);
-  glTexSubImage2D(GL_TEXTURE_2D, 0, offsetX, offsetY, width, height, GL_RGB, GL_FLOAT, pixelData);
+  glTexSubImage2D(GL_TEXTURE_2D, 0, offsetX, offsetY, width, height, GL_RGB, dataType, pixelData);
 }
 
 std::vector<glm::vec3> generateNoiseMapTexture(const NoiseMap &noiseMap) {

@@ -3,20 +3,14 @@
 #include "glm\glm.hpp"
 #include "glm\gtc\matrix_transform.hpp"
 #include "glm\gtc\type_ptr.hpp"
-#include "windows.h"
 #include <cassert>
 #include <fstream>
 #include <iostream>
 #include <iterator>
 
+#include "utils.h"
+
 namespace {
-std::string getExePath() {
-  char filePath[MAX_PATH] = {0};
-  GetModuleFileName(NULL, filePath, MAX_PATH);
-  std::string filePathStr(filePath);
-  filePathStr = filePathStr.substr(0, filePathStr.find_last_of("\\/"));
-  return filePathStr;
-}
 
 const std::string shaderPath(getExePath() + "/resources/shaders/");
 

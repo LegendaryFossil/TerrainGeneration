@@ -10,17 +10,25 @@ set(SRC
 	"noiseMapGenerator.h"
 	"falloffMapGenerator.cpp"
 	"falloffMapGenerator.h"
-	"sceneControl.h"
 	"sceneControl.cpp"
+	"sceneControl.h"
+	"sceneShaders.cpp"
+	"sceneShaders.h"
+	"sceneDefs.h"
 	"shaderLoader.cpp"
 	"shaderLoader.h"
 	"terrainDefs.h"
 	"terrainGenerator.cpp"
+	"sceneUI.cpp"
+	"sceneUI.h"
 	"textureGenerator.cpp"
 	"textureGenerator.h"
 	"timeMeasureUtils.cpp"
 	"timeMeasureUtils.h"
 	"uniformDefs.h"
+	"utils.cpp"
+	"utils.h"
+	"windowDefs.h"
 )
 
 set(IMGUI_PATH ImGui)
@@ -68,6 +76,7 @@ set(LIBRARIES
 	"libglew_static"
 	"glfw"
 	"glm::glm"
+	"stb_image"
 )
     
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SRC} ${IMGUI_SRC} ${FastNoiseSIMD_SRC} ${FastNoise_SRC})

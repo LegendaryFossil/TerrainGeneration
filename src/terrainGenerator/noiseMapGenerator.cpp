@@ -53,6 +53,10 @@ NoiseMap generateNoiseMapSIMD(const NoiseMapData &noiseMapData) {
   return noiseMap;
 }*/
 
+static float getCurveValue(const float value) {
+  return ((-0.635179f * value * value * value * value) + (2.35243f * value * value) + (-0.72331f * value) + -0.000937f);
+}
+
 NoiseMap generateNoiseMap(const NoiseMapData &noiseMapData, const FalloffMap &falloffMap) {
   assert(noiseMapData.width == noiseMapData.height);
 
@@ -103,6 +107,7 @@ NoiseMap generateNoiseMap(const NoiseMapData &noiseMapData, const FalloffMap &fa
     for (size_t j = 0; j < noiseMapData.width; ++j) {
       noiseMap[i][j] = (noiseMap[i][j] - minNoiseHeight) * noiseHeightDiffInverse;
       noiseMap[i][j] = glm::clamp(noiseMap[i][j] - falloffMap[noiseMapData.width * j + i].x, 0.0f, 1.0f);
+      noiseMap[i][j] = glm::clamp(getCurveValue(noiseMap[i][j]), 0.0f, 1.0f);
     }
   }
 
