@@ -32,6 +32,7 @@ struct Mesh {
   GLuint textureHandles[MAX_TEXTURES];
 };
 
+constexpr auto kSkyboxMeshId = "skybox";
 constexpr auto kTerrainMeshId = "terrain";
 constexpr auto kWaterMeshId = "water";
 constexpr auto kQuadMeshId = "quad";

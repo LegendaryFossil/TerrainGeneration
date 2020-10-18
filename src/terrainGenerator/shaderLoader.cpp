@@ -14,7 +14,8 @@ namespace {
 
 const std::string shaderPath(getExePath() + "/resources/shaders/");
 
-void validateShaderCompileStatus(const GLuint shaderObject, const GLuint shaderType) {
+void validateShaderCompileStatus(const std::string &shaderFileName, const GLuint shaderObject,
+                                 const GLuint shaderType) {
   GLint status;
   glGetShaderiv(shaderObject, GL_COMPILE_STATUS, &status);
   if (status == GL_FALSE) {
@@ -46,7 +47,8 @@ void validateShaderCompileStatus(const GLuint shaderObject, const GLuint shaderT
       break;
     }
 
-    fprintf(stderr, "Compile failure in %s shader:\n%s\n", strShaderType, logInfo);
+    fprintf(stderr, "Compile failure in %s (%s) shader:\n%s\n", shaderFileName.c_str(), strShaderType,
+            logInfo);
     delete[] logInfo;
     assert(false);
   }
@@ -92,7 +94,7 @@ GLuint compileShader(const std::string &shaderFileName, const GLuint shaderType)
     const char *shaderContent = content.c_str();
     glShaderSource(shaderObject, 1, &shaderContent, NULL);
     glCompileShader(shaderObject);
-    validateShaderCompileStatus(shaderObject, shaderType);
+    validateShaderCompileStatus(shaderFileName, shaderObject, shaderType);
     return shaderObject;
   } else {
     std::cout << "Unable to open shader file: " << shaderFileName << std::endl;
@@ -122,60 +124,51 @@ GLuint createProgramObject(const std::vector<GLuint> &shaderObjects) {
 void deleteProgramObject(const GLuint programObject) { glDeleteProgram(programObject); }
 
 // Int
-void setUniform(const GLuint programObject, const std::string &uniformName,
-                const int uniformValue) {
-  glProgramUniform1iv(programObject, glGetUniformLocation(programObject, uniformName.c_str()), 1, &uniformValue);
+void setUniform(const GLuint programObject, const std::string &uniformName, const int uniformValue) {
+  glProgramUniform1iv(programObject, glGetUniformLocation(programObject, uniformName.c_str()), 1,
+                      &uniformValue);
 }
-void setUniform(const GLuint programObject, const std::string &uniformName,
-                const glm::ivec2 &uniformValue) {
+void setUniform(const GLuint programObject, const std::string &uniformName, const glm::ivec2 &uniformValue) {
   glProgramUniform2iv(programObject, glGetUniformLocation(programObject, uniformName.c_str()), 1,
                       glm::value_ptr(uniformValue));
 }
-void setUniform(const GLuint programObject, const std::string &uniformName,
-                const glm::ivec3 &uniformValue) {
+void setUniform(const GLuint programObject, const std::string &uniformName, const glm::ivec3 &uniformValue) {
   glProgramUniform3iv(programObject, glGetUniformLocation(programObject, uniformName.c_str()), 1,
                       glm::value_ptr(uniformValue));
 }
-void setUniform(const GLuint programObject, const std::string &uniformName,
-                const glm::ivec4 &uniformValue) {
+void setUniform(const GLuint programObject, const std::string &uniformName, const glm::ivec4 &uniformValue) {
   glProgramUniform4iv(programObject, glGetUniformLocation(programObject, uniformName.c_str()), 1,
                       glm::value_ptr(uniformValue));
 }
 
 // Float
-void setUniform(const GLuint programObject, const std::string &uniformName,
-                const float uniformValue) {
-  glProgramUniform1fv(programObject, glGetUniformLocation(programObject, uniformName.c_str()), 1, &uniformValue);
+void setUniform(const GLuint programObject, const std::string &uniformName, const float uniformValue) {
+  glProgramUniform1fv(programObject, glGetUniformLocation(programObject, uniformName.c_str()), 1,
+                      &uniformValue);
 }
-void setUniform(const GLuint programObject, const std::string &uniformName,
-                const glm::vec2 &uniformValue) {
+void setUniform(const GLuint programObject, const std::string &uniformName, const glm::vec2 &uniformValue) {
   glProgramUniform2fv(programObject, glGetUniformLocation(programObject, uniformName.c_str()), 1,
                       glm::value_ptr(uniformValue));
 }
-void setUniform(const GLuint programObject, const std::string &uniformName,
-                const glm::vec3 &uniformValue) {
+void setUniform(const GLuint programObject, const std::string &uniformName, const glm::vec3 &uniformValue) {
   glProgramUniform3fv(programObject, glGetUniformLocation(programObject, uniformName.c_str()), 1,
                       glm::value_ptr(uniformValue));
 }
-void setUniform(const GLuint programObject, const std::string &uniformName,
-                const glm::vec4 &uniformValue) {
+void setUniform(const GLuint programObject, const std::string &uniformName, const glm::vec4 &uniformValue) {
   glProgramUniform4fv(programObject, glGetUniformLocation(programObject, uniformName.c_str()), 1,
                       glm::value_ptr(uniformValue));
 }
 
 // Matrices
-void setUniform(const GLuint programObject, const std::string &uniformName,
-                const glm::mat2 &uniformValue) {
-  glProgramUniformMatrix2fv(programObject, glGetUniformLocation(programObject, uniformName.c_str()), 1, GL_FALSE,
-                            glm::value_ptr(uniformValue));
+void setUniform(const GLuint programObject, const std::string &uniformName, const glm::mat2 &uniformValue) {
+  glProgramUniformMatrix2fv(programObject, glGetUniformLocation(programObject, uniformName.c_str()), 1,
+                            GL_FALSE, glm::value_ptr(uniformValue));
 }
-void setUniform(const GLuint programObject, const std::string &uniformName,
-                const glm::mat3 &uniformValue) {
-  glProgramUniformMatrix3fv(programObject, glGetUniformLocation(programObject, uniformName.c_str()), 1, GL_FALSE,
-                            glm::value_ptr(uniformValue));
+void setUniform(const GLuint programObject, const std::string &uniformName, const glm::mat3 &uniformValue) {
+  glProgramUniformMatrix3fv(programObject, glGetUniformLocation(programObject, uniformName.c_str()), 1,
+                            GL_FALSE, glm::value_ptr(uniformValue));
 }
-void setUniform(const GLuint programObject, const std::string &uniformName,
-                const glm::mat4 &uniformValue) {
-  glProgramUniformMatrix4fv(programObject, glGetUniformLocation(programObject, uniformName.c_str()), 1, GL_FALSE,
-                     glm::value_ptr(uniformValue));
+void setUniform(const GLuint programObject, const std::string &uniformName, const glm::mat4 &uniformValue) {
+  glProgramUniformMatrix4fv(programObject, glGetUniformLocation(programObject, uniformName.c_str()), 1,
+                            GL_FALSE, glm::value_ptr(uniformValue));
 }

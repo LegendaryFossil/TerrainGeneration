@@ -46,7 +46,7 @@ inline TerrainData getDefaultTerrainData() {
 
   terrainData.terrainTypes.reserve(3);
   terrainData.terrainTypes.push_back({"Water", glm::vec3(0.0f, 0.0f, 1.0f), 0.0f});
-  terrainData.terrainTypes.push_back({"Shallow water", glm::vec3(0.05f, 0.4f, 1.0f), 0.036f});
+  terrainData.terrainTypes.push_back({"Shallow water", glm::vec3(0.42f, 0.61f, 0.94f), 0.020f});
   terrainData.terrainTypes.push_back({"Sand", glm::vec3(1.0f, 1.0f, 0.45f), 0.067f});
   terrainData.terrainTypes.push_back({"Land", glm::vec3(0.0f, 1.0f, 0.0f), 0.392f});
   terrainData.terrainTypes.push_back({"Mountain", glm::vec3(0.43f, 0.227f, 0.03f), 0.686f});

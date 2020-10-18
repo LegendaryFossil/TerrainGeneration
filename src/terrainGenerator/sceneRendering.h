@@ -2,6 +2,7 @@
 
 #include "GL/glew.h"
 #include "glm\glm.hpp"
+#include "sceneShaders.h"
 
 struct Mesh;
 struct WindowData;
@@ -17,10 +18,13 @@ void renderFalloffMap(const Mesh &terrainMesh, const glm::mat4 &viewMatrix, cons
                       const GLuint terrainGeneratorDebugProgramObject);
 
 void renderTerrain(SceneData *sceneData, const double frameTime, const glm::mat4 &viewToClipMatrix,
-                   const bool isWireFrame, const GLuint terrainGeneratorProgramObject);
+                   const bool isWireFrame, const SceneProgramObjects &sceneProgramObjects);
 
 void renderQuad(const Mesh &quadMesh, const GLuint fboTexture, const glm::mat4 &viewMatrix,
                 const glm::mat4 &viewToClipMatrix, const GLuint quadProgramObject);
 
 void renderWater(const Mesh &waterMesh, const GLuint fboTexture, const glm::mat4 &viewMatrix,
                  const glm::mat4 &viewToClipMatrix, const GLuint waterProgramObject);
+
+void renderSkybox(const Mesh &skyboxMesh, const glm::mat4 &viewMatrix, const glm::mat4 &viewToClipMatrix,
+                  const GLuint skyboxProgramObject);

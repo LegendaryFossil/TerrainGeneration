@@ -8,6 +8,7 @@
 struct WindowData;
 struct SceneData;
 
+constexpr auto kSkyboxProgramObjectName = "skybox";
 constexpr auto kTerrainGeneratorProgramObjectName = "terrainGenerator";
 constexpr auto kTerrainGeneratorDebugProgramObjectName = "terrainGeneratorDebug";
 constexpr auto kWaterProgramObjectName = "water";

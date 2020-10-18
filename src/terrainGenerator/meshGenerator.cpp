@@ -93,21 +93,115 @@ static Mesh generateMeshFromHeightMap(const NoiseMapData &noiseMapData, const bo
   glBindVertexArray(0);
 
   glGenTextures(4, terrainMesh.textureHandles);
-  createTexture2D(&terrainMesh.textureHandles[0], GL_CLAMP_TO_EDGE, GL_NEAREST, noiseMapData.width, noiseMapData.height,
-                  GL_FLOAT, generateNoiseMapTexture(noiseMap).data());
-  createTexture2D(&terrainMesh.textureHandles[1], GL_CLAMP_TO_EDGE, GL_NEAREST, noiseMapData.width, noiseMapData.height,
-                  GL_FLOAT, generateColorMapTexture(noiseMap, terrainTypes).data());
-  createTexture2D(&terrainMesh.textureHandles[2], GL_CLAMP_TO_EDGE, GL_NEAREST, noiseMapData.width, noiseMapData.height,
-                  GL_FLOAT, generateFalloffMap(noiseMapData.width).data());
+  createTexture2D(&terrainMesh.textureHandles[0], GL_CLAMP_TO_EDGE, GL_NEAREST, noiseMapData.width,
+                  noiseMapData.height, GL_FLOAT, generateNoiseMapTexture(noiseMap).data());
+  createTexture2D(&terrainMesh.textureHandles[1], GL_CLAMP_TO_EDGE, GL_NEAREST, noiseMapData.width,
+                  noiseMapData.height, GL_FLOAT, generateColorMapTexture(noiseMap, terrainTypes).data());
+  createTexture2D(&terrainMesh.textureHandles[2], GL_CLAMP_TO_EDGE, GL_NEAREST, noiseMapData.width,
+                  noiseMapData.height, GL_FLOAT, generateFalloffMap(noiseMapData.width).data());
 
   int dudvWidth, dudvHeight;
   unsigned char *dudvPixelData = nullptr;
-  loadTexture("waterDUDV.png", &dudvWidth, &dudvHeight, &dudvPixelData);
+  loadTexture("waterDUDV.png", texturePath, &dudvWidth, &dudvHeight, &dudvPixelData);
   assert(dudvPixelData != nullptr);
-  createTexture2D(&terrainMesh.textureHandles[3], GL_REPEAT, GL_NEAREST, dudvWidth, dudvHeight, GL_UNSIGNED_BYTE,
-                  dudvPixelData);
+  createTexture2D(&terrainMesh.textureHandles[3], GL_REPEAT, GL_NEAREST, dudvWidth, dudvHeight,
+                  GL_UNSIGNED_BYTE, dudvPixelData);
+  freeTexture(dudvPixelData);
 
   return terrainMesh;
+}
+
+static Mesh generateSkyboxMesh() {
+  Mesh skyboxMesh = {};
+
+  // 0-3
+  skyboxMesh.vertices.push_back({.position3f = {-1.0f, 1.0f, -1.0f}});
+  skyboxMesh.vertices.push_back({.position3f = {-1.0f, -1.0f, -1.0f}});
+  skyboxMesh.vertices.push_back({.position3f = {1.0f, -1.0f, -1.0f}});
+  skyboxMesh.vertices.push_back({.position3f = {1.0f, 1.0f, -1.0f}});
+
+  // 4-7
+  skyboxMesh.vertices.push_back({.position3f = {-1.0f, -1.0f, 1.0f}});
+  skyboxMesh.vertices.push_back({.position3f = {-1.0f, 1.0f, 1.0f}});
+  skyboxMesh.vertices.push_back({.position3f = {1.0f, -1.0f, 1.0f}});
+  skyboxMesh.vertices.push_back({.position3f = {1.0f, 1.0f, 1.0f}});
+
+  // Back
+  skyboxMesh.indices.push_back(0);
+  skyboxMesh.indices.push_back(1);
+  skyboxMesh.indices.push_back(2);
+  skyboxMesh.indices.push_back(2);
+  skyboxMesh.indices.push_back(3);
+  skyboxMesh.indices.push_back(0);
+
+  // Left
+  skyboxMesh.indices.push_back(4);
+  skyboxMesh.indices.push_back(1);
+  skyboxMesh.indices.push_back(0);
+  skyboxMesh.indices.push_back(0);
+  skyboxMesh.indices.push_back(5);
+  skyboxMesh.indices.push_back(4);
+
+  // Right
+  skyboxMesh.indices.push_back(2);
+  skyboxMesh.indices.push_back(6);
+  skyboxMesh.indices.push_back(7);
+  skyboxMesh.indices.push_back(7);
+  skyboxMesh.indices.push_back(3);
+  skyboxMesh.indices.push_back(2);
+
+  // Front
+  skyboxMesh.indices.push_back(4);
+  skyboxMesh.indices.push_back(5);
+  skyboxMesh.indices.push_back(7);
+  skyboxMesh.indices.push_back(7);
+  skyboxMesh.indices.push_back(6);
+  skyboxMesh.indices.push_back(4);
+
+  // Top
+  skyboxMesh.indices.push_back(0);
+  skyboxMesh.indices.push_back(3);
+  skyboxMesh.indices.push_back(7);
+  skyboxMesh.indices.push_back(7);
+  skyboxMesh.indices.push_back(5);
+  skyboxMesh.indices.push_back(0);
+
+  // Bottom
+  skyboxMesh.indices.push_back(1);
+  skyboxMesh.indices.push_back(4);
+  skyboxMesh.indices.push_back(2);
+  skyboxMesh.indices.push_back(2);
+  skyboxMesh.indices.push_back(4);
+  skyboxMesh.indices.push_back(6);
+
+  skyboxMesh.modelTransformation = glm::identity<glm::mat4>();
+
+  glGenBuffers(1, &skyboxMesh.vboHandle);
+  createVertexBufferObject(&skyboxMesh.vboHandle, skyboxMesh.vertices);
+
+  glGenBuffers(1, &skyboxMesh.iboHandle);
+  createIndexBufferObject(&skyboxMesh.iboHandle, skyboxMesh.indices);
+
+  glGenVertexArrays(1, &skyboxMesh.vaoHandle);
+  glBindVertexArray(skyboxMesh.vaoHandle);
+
+  glBindBuffer(GL_ARRAY_BUFFER, skyboxMesh.vboHandle);
+
+  glEnableVertexAttribArray(0);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), 0);
+
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, skyboxMesh.iboHandle);
+
+  glBindVertexArray(0);
+
+  std::vector<std::string> facesNames{
+      "right.jpg", "left.jpg", "top.jpg", "bottom.jpg", "front.jpg", "back.jpg",
+  };
+
+  glGenTextures(1, skyboxMesh.textureHandles);
+  createCubeMapTexture(&skyboxMesh.textureHandles[0], facesNames);
+
+  return skyboxMesh;
 }
 
 static Mesh generateWaterMesh(const int mapWidth, const int mapHeight) {
@@ -231,10 +325,13 @@ static Mesh generateQuadMesh() {
 
 MeshIdToMesh initSceneMeshes(const TerrainData &terrainData) {
   MeshIdToMesh meshIdToMesh;
-  meshIdToMesh.reserve(3);
+  meshIdToMesh.reserve(4);
 
-  meshIdToMesh.emplace(kTerrainMeshId, generateMeshFromHeightMap(terrainData.noiseMapData, terrainData.useFalloffMap,
-                                                                 terrainData.terrainTypes));
+  meshIdToMesh.emplace(kSkyboxMeshId, generateSkyboxMesh());
+
+  meshIdToMesh.emplace(kTerrainMeshId,
+                       generateMeshFromHeightMap(terrainData.noiseMapData, terrainData.useFalloffMap,
+                                                 terrainData.terrainTypes));
   meshIdToMesh.emplace(kWaterMeshId,
                        generateWaterMesh(terrainData.noiseMapData.width, terrainData.noiseMapData.height));
   meshIdToMesh.emplace(kQuadMeshId, generateQuadMesh()); // Delete

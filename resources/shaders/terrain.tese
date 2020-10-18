@@ -3,23 +3,24 @@
 layout(quads, fractional_even_spacing, cw) in;
 
 uniform sampler2D heightMapTexture;
-uniform float heightMultiplier;
 
+uniform float heightMultiplier;
 uniform float terrainGridPointSpacing;
 uniform float patchSize;
+
+uniform vec3 worldCameraPos;
+uniform vec4 worldLight;
+uniform vec4 horizontalClipPlane;
 
 uniform mat4 modelToWorldMatrix;
 uniform mat4 worldToViewMatrix;
 uniform mat4 viewToClipMatrix;
 
-uniform vec4 worldLight;
-
-uniform vec4 horizontalClipPlane;
-
 in vec2 positionTC[];
 
 out float isWaterTE; // If the vertex is water
 out vec2 uvTE; // Texture coordinates
+out vec3 worldPointToCameraTE; // Vector from vertex to camera
 out vec3 eyePositionTE; // Vertex position as seen from camera
 out vec3 eyeLightTE; // Light as seen from the camera
 out vec4 clipSpacePosTE; // Clip space vertex
@@ -46,6 +47,8 @@ void main(){
 
 	vec4 worldPosition = modelToWorldMatrix * vertex;
 	gl_ClipDistance[1] = dot(worldPosition, horizontalClipPlane);
+
+	worldPointToCameraTE = worldCameraPos - worldPosition.xyz;
 
 	vec4 viewPosition = worldToViewMatrix * worldPosition;
 		

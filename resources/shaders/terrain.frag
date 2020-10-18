@@ -1,6 +1,7 @@
 #version 430
 
 uniform mat3 normalMatrix;
+uniform mat4 modelToWorldMatrix;
 
 uniform vec3 ambientConstant;
 
@@ -15,6 +16,7 @@ uniform float waterDistortionMoveFactor;
 
 in float isWaterTE;
 in vec2 uvTE;
+in vec3 worldPointToCameraTE;
 in vec3 eyePositionTE;
 in vec3 eyeLightTE;
 in vec4 clipSpacePosTE;
@@ -38,7 +40,8 @@ void main() {
 	const float forwardY = height(uvTE.s, uvTE.t + delta) - height(uvTE.s, uvTE.t - delta);
 	const vec3 deltaZ = vec3 (0.0, forwardY, 2.0 * terrainGridPointSpacing);
 
-	const vec3 normal = normalize(normalMatrix * cross(deltaZ, deltaX));
+	const vec3 viewNormal = normalize(normalMatrix * cross(deltaZ, deltaX));
+	const vec3 worldNormal = normalize(mat3(modelToWorldMatrix) * cross(deltaZ, deltaX));
 
 	// Compute color
 	const vec3 lightDirection = normalize(eyeLightTE-eyePositionTE);
@@ -59,11 +62,14 @@ void main() {
 		projectiveTextureCoord.y = clamp(projectiveTextureCoord.y, 0.001, 0.999);
 
 		const vec3 reflectColorValue = texture(sceneTexture, vec2(projectiveTextureCoord.x, 1.0-projectiveTextureCoord.y)).rgb;
-		outputColor = mix(reflectColorValue, colorMapValue, 0.5);
+		float reflectionStrength = dot(normalize(worldPointToCameraTE), viewNormal);
+		reflectionStrength = pow(reflectionStrength, 3.0);
+
+		outputColor = mix(reflectColorValue, colorMapValue, reflectionStrength);
 	}
 	else {
 		const vec3 diffuseConstant = colorMapValue;
-		const vec3 diffuseReflection = diffuseConstant * clamp(dot(lightDirection, normal), 0.0f, 1.0f);
+		const vec3 diffuseReflection = diffuseConstant * clamp(dot(lightDirection, viewNormal), 0.0f, 1.0f);
 		outputColor =  ambientConstant + diffuseReflection;
 	}
 

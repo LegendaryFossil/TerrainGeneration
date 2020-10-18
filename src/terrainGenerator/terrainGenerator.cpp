@@ -128,8 +128,6 @@ void initGLStates() {
 void renderScene() {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-  handleSceneUiInput(&sceneSettings, &sceneData.terrainData, &sceneData.meshIdToMesh, sceneProgramObjects);
-
   glfwPollEvents();
 
   if (sceneSettings.controlMode == SceneSettings::CONTROL_MODE::CAMERA) {
@@ -158,8 +156,7 @@ void renderScene() {
                      viewToClipMatrix, sceneProgramObjects.at(kTerrainGeneratorDebugProgramObjectName));
     break;
   case SceneSettings::RENDER_MODE::MESH: {
-    renderTerrain(&sceneData, frameTimeData.frameTime, viewToClipMatrix, false,
-                  sceneProgramObjects.at(kTerrainGeneratorProgramObjectName));
+    renderTerrain(&sceneData, frameTimeData.frameTime, viewToClipMatrix, false, sceneProgramObjects);
     /*renderQuad(sceneData.meshIdToMesh.at(kQuadMeshId), sceneData.sceneFrameBuffer.fboTexture,
                sceneData.fpsCamera.createViewMatrix(), viewToClipMatrix,
                sceneProgramObjects.at(kQuadShaderProgramObjectName));
@@ -168,15 +165,15 @@ void renderScene() {
                 sceneProgramObjects.at(kWaterProgramObjectName));*/
   } break;
   case SceneSettings::RENDER_MODE::WIREFRAME:
-    renderTerrain(&sceneData, frameTimeData.frameTime, viewToClipMatrix, true,
-                  sceneProgramObjects.at(kTerrainGeneratorProgramObjectName));
+    renderTerrain(&sceneData, frameTimeData.frameTime, viewToClipMatrix, true, sceneProgramObjects);
     break;
   default:
     assert(false);
     break;
   }
 
-  // renderWater();
+  // Call here to always render UI at the very front
+  handleSceneUiInput(&sceneSettings, &sceneData.terrainData, &sceneData.meshIdToMesh, sceneProgramObjects);
 
   glfwSwapBuffers(windowData.window);
 }

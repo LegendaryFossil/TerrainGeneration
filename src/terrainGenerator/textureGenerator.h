@@ -1,25 +1,30 @@
 #pragma once
 
-#include <vector>
-#include <string>
-
-#include "glm/glm.hpp"
-
 #include "GL/glew.h"
+#include "glm/glm.hpp"
 #include "noiseMapGenerator.h"
+#include "utils.h"
+#include <string>
+#include <vector>
 
 struct TerrainData;
 struct TerrainType;
 
-void loadTexture(const std::string &textureName, int *width, int *height, unsigned char **pixelData);
+const std::string texturePath(getExePath() + "/resources/textures/");
+const std::string skyboxTexturePath(getExePath() + "/resources/textures/skybox/");
 
-void createTexture2D(GLuint *texHandle, GLenum wrapMode, GLenum filterMode, const int width,
-                     const int height, GLenum dataType,
-                     const void *pixels);
+void loadTexture(const std::string &textureName, const std::string &texturePath, int *width, int *height,
+                 unsigned char **pixelData);
+void freeTexture(unsigned char *pixelData);
+
+void createCubeMapTexture(GLuint *texHandle, const std::vector<std::string> &facesNames);
+
+void createTexture2D(GLuint *texHandle, GLenum wrapMode, GLenum filterMode, const int width, const int height,
+                     GLenum dataType, const void *pixels);
 void updateTexture2D(GLuint *texHandle, const int offsetX, const int offsetY, const int width,
-                     const int height, GLenum dataType,
-                     const void *pixels);
+                     const int height, GLenum dataType, const void *pixels);
 
 std::vector<glm::vec3> generateNoiseMapTexture(const NoiseMap &noiseMap);
 
-std::vector<glm::vec3> generateColorMapTexture(const NoiseMap &noiseMap, const std::vector<TerrainType> &terrainTypes);
+std::vector<glm::vec3> generateColorMapTexture(const NoiseMap &noiseMap,
+                                               const std::vector<TerrainType> &terrainTypes);

@@ -32,7 +32,7 @@ public:
   void moveDown(GLfloat moveSpeed);
 
   void setCameraPosition(const glm::vec3 &cameraPosition) { _cameraPositionCartesian = cameraPosition; }
-  glm::vec3 cameraPosition() { return _cameraPositionCartesian; }
+  glm::vec3 cameraPosition() const { return _cameraPositionCartesian; }
 
 private:
   glm::vec3 sphericalToCartesian(glm::vec3 sphericalCoordinate);

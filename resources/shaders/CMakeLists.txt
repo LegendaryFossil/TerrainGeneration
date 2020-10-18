@@ -1,6 +1,8 @@
 set(SHADERS
 	"quad.vert"
 	"quad.frag"
+	"skybox.vert"
+	"skybox.frag"
 	"terrain.vert"
 	"terrain.tesc"
 	"terrain.tese"
