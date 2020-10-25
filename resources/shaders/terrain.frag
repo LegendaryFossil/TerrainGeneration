@@ -14,9 +14,7 @@ uniform float terrainGridPointSpacing;
 uniform float heightMultiplier;
 uniform float waterDistortionMoveFactor;
 
-in float isWaterTE;
 in vec2 uvTE;
-in vec3 worldPointToCameraTE;
 in vec3 eyePositionTE;
 in vec3 eyeLightTE;
 in vec4 clipSpacePosTE;
@@ -30,6 +28,13 @@ float height(const float u, const float v) {
 	return (texture(heightMapTexture, vec2(u, v)).r * heightMultiplier);
 }
 
+// R_F0 = Specular color
+// E = toCamera vector
+// N = normal
+vec3 fresnel_schlick(const vec3 R_F0, const vec3 E, const vec3 N) {
+	return R_F0 + (1.0 - R_F0) * pow(1.0 - max(0.0, dot(E,N)), 5.0);
+}
+
 void main() {
 	// Compute normal 
 	const float delta =  1.0 / (textureSize(heightMapTexture, 0).x);
@@ -41,7 +46,6 @@ void main() {
 	const vec3 deltaZ = vec3 (0.0, forwardY, 2.0 * terrainGridPointSpacing);
 
 	const vec3 viewNormal = normalize(normalMatrix * cross(deltaZ, deltaX));
-	const vec3 worldNormal = normalize(mat3(modelToWorldMatrix) * cross(deltaZ, deltaX));
 
 	// Compute color
 	const vec3 lightDirection = normalize(eyeLightTE-eyePositionTE);
@@ -51,7 +55,7 @@ void main() {
 	const vec3 colorMapValue = texture(colorMapTexture, uvTE).rgb;
 
 	vec3 outputColor;
-	if(isWaterTE == 1.0) {
+	if(colorMapValue == vec3(0.0, 0.0, 1.0)) {
 		vec2 projectiveTextureCoord = (clipSpacePosTE.xy/clipSpacePosTE.w) / 2.0 + 0.5;
 		
 		vec2 distortion = (texture(dudvTexture, vec2(uvTE.x + waterDistortionMoveFactor, uvTE.y)).rg * 2.0 - 1.0) * distortionStrength;
@@ -62,10 +66,8 @@ void main() {
 		projectiveTextureCoord.y = clamp(projectiveTextureCoord.y, 0.001, 0.999);
 
 		const vec3 reflectColorValue = texture(sceneTexture, vec2(projectiveTextureCoord.x, 1.0-projectiveTextureCoord.y)).rgb;
-		float reflectionStrength = dot(normalize(worldPointToCameraTE), viewNormal);
-		reflectionStrength = pow(reflectionStrength, 3.0);
-
-		outputColor = mix(reflectColorValue, colorMapValue, reflectionStrength);
+		
+		outputColor = mix(colorMapValue, reflectColorValue, clamp(1.3 * fresnel_schlick(vec3(0.5), viewDirection, viewNormal), 0.0, 1.0));
 	}
 	else {
 		const vec3 diffuseConstant = colorMapValue;

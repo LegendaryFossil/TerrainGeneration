@@ -45,7 +45,6 @@ SceneProgramObjects initSceneShaders(const WindowData &windowData, const SceneDa
   setUniform(terrainGeneratorProgramObject, ufViewportSizeName,
              glm::vec2(windowData.width, windowData.height));
   setUniform(terrainGeneratorProgramObject, ufWorldLightName, sceneData.lightData.worldLightPosition);
-  setUniform(terrainGeneratorProgramObject, ufWorldCameraPos, sceneData.fpsCamera.cameraPosition());
   setUniform(terrainGeneratorProgramObject, ufHorizontalClipPlane, glm ::vec4(0.0f, 1.0f, 0.0f, 0.412f));
 
   // Terrain noise/color/falloff map shader

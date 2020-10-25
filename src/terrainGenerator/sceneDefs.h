@@ -12,9 +12,12 @@ struct SceneData {
   ViewFrustumData viewFrustumData = {};
   MeshIdToMesh meshIdToMesh = {};
 
-  struct {
+  struct FrameBufferObject {
     unsigned int fboHandle;
     unsigned int fboTexture;
     unsigned int rboHandle;
-  } sceneFrameBuffer;
+
+    unsigned int width;
+    unsigned int height;
+  } frameBufferObject;
 };

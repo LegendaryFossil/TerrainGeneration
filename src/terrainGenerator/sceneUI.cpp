@@ -14,7 +14,6 @@
 void initUI(GLFWwindow *window, const std::string &glslVersion) {
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
-  ImGuiIO &io = ImGui::GetIO();
   ImGui_ImplGlfw_InitForOpenGL(window, true);
   ImGui_ImplOpenGL3_Init(glslVersion.c_str());
 
@@ -27,8 +26,7 @@ void destroyUI() {
   ImGui::DestroyContext();
 }
 
-void handleSceneUiInput(SceneSettings *sceneSettings, TerrainData *terrainData, MeshIdToMesh *meshIdToMesh,
-                        const SceneProgramObjects &sceneProgramObjects) {
+void handleUIInput(SceneSettings *sceneSettings, TerrainData *terrainData, MeshIdToMesh *meshIdToMesh) {
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
@@ -78,25 +76,23 @@ void handleSceneUiInput(SceneSettings *sceneSettings, TerrainData *terrainData, 
         ImGui::SliderInt("Seed", &terrainData->noiseMapData.seed, 1, 100) ||
         ImGui::SliderFloat("Octave offset X", &terrainData->noiseMapData.octaveOffset.x, 0.0f, 2000.0f) ||
         ImGui::SliderFloat("Octave offset Y", &terrainData->noiseMapData.octaveOffset.y, 0.0f, 2000.0f)) {
-      updateTerrainMeshTexture(&meshIdToMesh->at(kTerrainMeshId), terrainData->noiseMapData, terrainData->useFalloffMap,
-                               terrainData->terrainTypes);
+      updateTerrainMeshTexture(&meshIdToMesh->at(kTerrainMeshId), terrainData->noiseMapData,
+                               terrainData->useFalloffMap, terrainData->terrainTypes);
     }
 
     ImGui::TreePop();
   }
 
   if (ImGui::Checkbox("Use falloff map", &terrainData->useFalloffMap)) {
-    updateTerrainMeshTexture(&meshIdToMesh->at(kTerrainMeshId), terrainData->noiseMapData, terrainData->useFalloffMap,
-                             terrainData->terrainTypes);
+    updateTerrainMeshTexture(&meshIdToMesh->at(kTerrainMeshId), terrainData->noiseMapData,
+                             terrainData->useFalloffMap, terrainData->terrainTypes);
   }
 
   if (ImGui::SliderFloat("Terrain grid spacing", &terrainData->gridPointSpacing, 1.0f, 10.0f)) {
-    setUniform(sceneProgramObjects.at(kTerrainGeneratorProgramObjectName), ufTerrainGridPointSpacingName,
-               terrainData->gridPointSpacing);
+    // Do nothing, just update the variable
   }
   if (ImGui::SliderFloat("Height multiplier", &terrainData->heightMultiplier, 0.0f, 100.0f)) {
-    setUniform(sceneProgramObjects.at(kTerrainGeneratorProgramObjectName), ufHeightMultiplierName,
-               terrainData->heightMultiplier);
+    // Do nothing, just update the variable
   }
 
   if (ImGui::SliderFloat("Water distortion speed", &terrainData->waterDistortionSpeed, 0.0f, 1.0f)) {
@@ -104,8 +100,7 @@ void handleSceneUiInput(SceneSettings *sceneSettings, TerrainData *terrainData, 
   }
 
   if (ImGui::SliderInt("Pixels per triangle", &terrainData->pixelsPerTriangle, 1, 30)) {
-    setUniform(sceneProgramObjects.at(kTerrainGeneratorProgramObjectName), ufPixelsPerTriangleName,
-               terrainData->pixelsPerTriangle);
+    // Do nothing, just update the variable
   }
 
   ImGui::SetNextItemOpen(true, ImGuiCond_FirstUseEver);
@@ -128,8 +123,9 @@ void handleSceneUiInput(SceneSettings *sceneSettings, TerrainData *terrainData, 
   }
 
   ImGui::End();
+}
 
+void renderUI() {
   ImGui::Render();
-
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }

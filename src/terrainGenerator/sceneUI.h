@@ -22,5 +22,5 @@ struct SceneSettings {
 
 void initUI(GLFWwindow *window, const std::string &glslVersion);
 void destroyUI();
-void handleSceneUiInput(SceneSettings *sceneSettings, TerrainData *terrainData, MeshIdToMesh *meshIdToMesh,
-                        const SceneProgramObjects &sceneProgramObjects);
+void renderUI();
+void handleUIInput(SceneSettings *sceneSettings, TerrainData *terrainData, MeshIdToMesh *meshIdToMesh);

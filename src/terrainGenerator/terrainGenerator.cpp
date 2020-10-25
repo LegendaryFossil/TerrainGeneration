@@ -39,9 +39,11 @@ static void frameBufferSizeCallBack(GLFWwindow *window, int width, int height) {
     return;
   }
 
+  windowData.width = width;
+  windowData.height = height;
+  windowData.center = glm::vec2(width / 2.0f, height / 2.0f);
+
   glViewport(0, 0, width, height);
-  setUniform(sceneProgramObjects.at(kTerrainGeneratorProgramObjectName), ufViewportSizeName,
-             glm::vec2(width, height));
 }
 
 static void resizeWindowCallback(GLFWwindow *window, int width, int height) {
@@ -53,6 +55,7 @@ static void resizeWindowCallback(GLFWwindow *window, int width, int height) {
   windowData.width = width;
   windowData.height = height;
   windowData.center = glm::vec2(width / 2.0f, height / 2.0f);
+  glViewport(0, 0, width, height);
 }
 
 static void cursorPosCallback(GLFWwindow *window, double xPos, double yPos) {
@@ -83,26 +86,29 @@ static void keyCallback(GLFWwindow *window, int key, int scancode, int action, i
 }
 
 static void initFrameBuffers() {
-  glGenFramebuffers(1, &sceneData.sceneFrameBuffer.fboHandle);
-  glBindFramebuffer(GL_FRAMEBUFFER, sceneData.sceneFrameBuffer.fboHandle);
+  glGenFramebuffers(1, &sceneData.frameBufferObject.fboHandle);
+  glBindFramebuffer(GL_FRAMEBUFFER, sceneData.frameBufferObject.fboHandle);
 
-  glGenTextures(1, &sceneData.sceneFrameBuffer.fboTexture);
-  createTexture2D(&sceneData.sceneFrameBuffer.fboTexture, GL_CLAMP_TO_EDGE, GL_NEAREST, windowData.width,
+  glGenTextures(1, &sceneData.frameBufferObject.fboTexture);
+  createTexture2D(&sceneData.frameBufferObject.fboTexture, GL_CLAMP_TO_EDGE, GL_NEAREST, windowData.width,
                   windowData.height, GL_FLOAT, NULL);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-                         sceneData.sceneFrameBuffer.fboTexture, 0);
+                         sceneData.frameBufferObject.fboTexture, 0);
 
-  glGenRenderbuffers(1, &sceneData.sceneFrameBuffer.rboHandle);
-  glBindRenderbuffer(GL_RENDERBUFFER, sceneData.sceneFrameBuffer.rboHandle);
+  glGenRenderbuffers(1, &sceneData.frameBufferObject.rboHandle);
+  glBindRenderbuffer(GL_RENDERBUFFER, sceneData.frameBufferObject.rboHandle);
   glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, windowData.width, windowData.height);
   glBindRenderbuffer(GL_RENDERBUFFER, 0);
   glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER,
-                            sceneData.sceneFrameBuffer.rboHandle);
+                            sceneData.frameBufferObject.rboHandle);
 
   const auto status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
   if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
     assert(false);
   }
+
+  sceneData.frameBufferObject.width = windowData.width;
+  sceneData.frameBufferObject.height = windowData.height;
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
@@ -125,9 +131,7 @@ void initGLStates() {
   glPatchParameteri(GL_PATCH_VERTICES, 1);
 }
 
-void renderScene() {
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+void updateScene() {
   glfwPollEvents();
 
   if (sceneSettings.controlMode == SceneSettings::CONTROL_MODE::CAMERA) {
@@ -135,6 +139,17 @@ void renderScene() {
   } else if (sceneSettings.controlMode == SceneSettings::CONTROL_MODE::LIGHT) {
     handleLightInput(&sceneData.lightData, controlInputData, frameTimeData.frameTime);
   }
+
+  sceneData.terrainData.waterDistortionMoveFactor +=
+      sceneData.terrainData.waterDistortionSpeed * float(frameTimeData.frameTime);
+  sceneData.terrainData.waterDistortionMoveFactor =
+      std::fmod(sceneData.terrainData.waterDistortionMoveFactor, 1.0f);
+
+  handleUIInput(&sceneSettings, &sceneData.terrainData, &sceneData.meshIdToMesh, sceneProgramObjects);
+}
+
+void renderScene() {
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   // Measure time each frame
   updateFrameTime(&frameTimeData);
@@ -155,25 +170,37 @@ void renderScene() {
     renderFalloffMap(sceneData.meshIdToMesh.at(kTerrainMeshId), sceneData.fpsCamera.createViewMatrix(),
                      viewToClipMatrix, sceneProgramObjects.at(kTerrainGeneratorDebugProgramObjectName));
     break;
-  case SceneSettings::RENDER_MODE::MESH: {
-    renderTerrain(&sceneData, frameTimeData.frameTime, viewToClipMatrix, false, sceneProgramObjects);
-    /*renderQuad(sceneData.meshIdToMesh.at(kQuadMeshId), sceneData.sceneFrameBuffer.fboTexture,
-               sceneData.fpsCamera.createViewMatrix(), viewToClipMatrix,
-               sceneProgramObjects.at(kQuadShaderProgramObjectName));
-    renderWater(sceneData.meshIdToMesh.at(kWaterMeshId), sceneData.sceneFrameBuffer.fboTexture,
-                sceneData.fpsCamera.createViewMatrix(), viewToClipMatrix,
-                sceneProgramObjects.at(kWaterProgramObjectName));*/
+  case SceneSettings::RENDER_MODE::MESH:
+  case SceneSettings::RENDER_MODE::WIREFRAME: {
+    // Move camera under water (twice distance from water to camera)
+    // This assumes no model transformation affects the terrain (i.e. identity matrix transformation)
+    // and that water height is always at y = 0.0
+    auto &camera = sceneData.fpsCamera;
+    const auto waterPositionY = 0.0f;
+    auto cameraPosition = camera.cameraPosition();
+    const auto distanceToMoveY = 2.0f * (camera.cameraPosition().y - waterPositionY);
+    cameraPosition.y -= distanceToMoveY;
+    camera.setCameraPosition(cameraPosition);
+    camera.invertPitch();
+    renderTerrainReflectionTexture(sceneData, camera.createViewMatrix(), viewToClipMatrix,
+                                       sceneProgramObjects);
+
+    // Change camera back to original state
+    cameraPosition.y += distanceToMoveY;
+    camera.setCameraPosition(cameraPosition);
+    camera.invertPitch();
+
+    renderTerrain(windowData, sceneData, camera.createViewMatrix(), viewToClipMatrix,
+                      sceneSettings.renderMode == SceneSettings::RENDER_MODE::MESH ? false : true,
+                      sceneProgramObjects);
   } break;
-  case SceneSettings::RENDER_MODE::WIREFRAME:
-    renderTerrain(&sceneData, frameTimeData.frameTime, viewToClipMatrix, true, sceneProgramObjects);
-    break;
   default:
     assert(false);
     break;
   }
 
   // Call here to always render UI at the very front
-  handleSceneUiInput(&sceneSettings, &sceneData.terrainData, &sceneData.meshIdToMesh, sceneProgramObjects);
+  renderUI();
 
   glfwSwapBuffers(windowData.window);
 }
@@ -188,7 +215,7 @@ void freeResources() {
     }
   }
 
-  glDeleteBuffers(1, &sceneData.sceneFrameBuffer.fboHandle);
+  glDeleteBuffers(1, &sceneData.frameBufferObject.fboHandle);
 
   for (const auto &[programObjectName, programObject] : sceneProgramObjects) {
     deleteProgramObject(programObject);
@@ -248,6 +275,7 @@ void initTerrainGenerator() {
   initSceneData();
 
   while (!glfwWindowShouldClose(windowData.window)) {
+    updateScene();
     renderScene();
   }
 

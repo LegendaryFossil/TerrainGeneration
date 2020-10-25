@@ -10,8 +10,8 @@ out vec3 texCoordV;
 
 void main() {
 	const vec4 worldPosition = modelToWorldMatrix * vec4(position, 1.0f);
-
 	texCoordV = worldPosition.xyz;
+	vec4 clipSpacePosition = viewToClipMatrix * worldToViewMatrix * worldPosition;
 
-	gl_Position = viewToClipMatrix * worldToViewMatrix * worldPosition;
+	gl_Position = clipSpacePosition.xyww;
 }

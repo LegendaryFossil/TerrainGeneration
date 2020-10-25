@@ -6,12 +6,47 @@
 #include "uniformDefs.h"
 #include "windowDefs.h"
 
-static void renderTerrainImpl(const Mesh &terrainMesh, const LightData &lightData,
-                              const glm::mat4 &viewMatrix, const glm::mat4 &viewToClipMatrix,
-                              const GLuint terrainGeneratorProgramObject) {
+static void renderSkybox(const Mesh &skyboxMesh, const glm::mat4 &viewMatrix,
+                         const glm::mat4 &viewToClipMatrix, const GLuint skyboxProgramObject) {
+  glDepthFunc(GL_LEQUAL);
+
+  glBindVertexArray(skyboxMesh.vaoHandle);
+  glUseProgram(skyboxProgramObject);
+  {
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxMesh.textureHandles[0]);
+
+    setUniform(skyboxProgramObject, ufModelToWorldMatrixName, skyboxMesh.modelTransformation);
+    setUniform(skyboxProgramObject, ufWorldToViewMatrixName, glm::mat4(glm::mat3(viewMatrix)));
+    setUniform(skyboxProgramObject, ufViewToClipMatrixName, viewToClipMatrix);
+
+    glDrawElements(GL_TRIANGLES, GLsizei(skyboxMesh.indices.size()), GL_UNSIGNED_INT, (void *)0);
+  }
+  glUseProgram(0);
+
+  glDepthFunc(GL_LESS);
+}
+
+static void renderSceneImpl(const SceneData &sceneData, const unsigned int frameBufferWidth,
+                            const unsigned int frameBufferHeight, const glm::mat4 &viewMatrix,
+                            const glm::mat4 &viewToClipMatrix, const bool isWireFrame,
+                            const SceneProgramObjects &sceneProgramObjects) {
+  if (isWireFrame) {
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+  } else {
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+  }
+
+  const auto &terrainMesh = sceneData.meshIdToMesh.at(kTerrainMeshId);
+  const auto &skyboxMesh = sceneData.meshIdToMesh.at(kSkyboxMeshId);
+
   glBindVertexArray(terrainMesh.vaoHandle);
+  const auto terrainGeneratorProgramObject = sceneProgramObjects.at(kTerrainGeneratorProgramObjectName);
   glUseProgram(terrainGeneratorProgramObject);
   {
+    glViewport(0, 0, frameBufferWidth, frameBufferHeight);
+
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, terrainMesh.textureHandles[0]); // Height map
     glActiveTexture(GL_TEXTURE1);
@@ -22,44 +57,24 @@ static void renderTerrainImpl(const Mesh &terrainMesh, const LightData &lightDat
     setUniform(terrainGeneratorProgramObject, ufNormalMatrix,
                glm::transpose(glm::inverse(glm::mat3(viewMatrix * terrainMesh.modelTransformation))));
     setUniform(terrainGeneratorProgramObject, ufViewToClipMatrixName, viewToClipMatrix);
-    setUniform(terrainGeneratorProgramObject, ufWorldLightName, lightData.worldLightPosition);
+    setUniform(terrainGeneratorProgramObject, ufWorldLightName, sceneData.lightData.worldLightPosition);
+    setUniform(terrainGeneratorProgramObject, ufViewportSizeName,
+               glm::vec2(frameBufferWidth, frameBufferHeight));
+    setUniform(terrainGeneratorProgramObject, ufWaterDistortionMoveFactorName,
+               sceneData.terrainData.waterDistortionMoveFactor);
+    setUniform(terrainGeneratorProgramObject, ufTerrainGridPointSpacingName,
+               sceneData.terrainData.gridPointSpacing);
+    setUniform(terrainGeneratorProgramObject, ufHeightMultiplierName, sceneData.terrainData.heightMultiplier);
+    setUniform(terrainGeneratorProgramObject, ufPixelsPerTriangleName,
+               sceneData.terrainData.pixelsPerTriangle);
 
     glDrawElements(GL_PATCHES, GLsizei(terrainMesh.indices.size()), GL_UNSIGNED_INT, (void *)0);
   }
   glUseProgram(0);
-}
+  glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-static void renderReflectionTexture(const MeshIdToMesh &sceneMeshes, const LightData &lightData,
-                                    const GLuint fboHandle, Camera *camera, const glm::mat4 &viewToClipMatrix,
-                                    const SceneProgramObjects &sceneProgramObjects) {
-  glBindFramebuffer(GL_FRAMEBUFFER, fboHandle);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  glEnable(GL_CLIP_DISTANCE1);
-
-  // Move camera under water (twice distance from water to camera)
-  // This assumes no model transformation affects the terrain (i.e. identity matrix transformation)
-  // and that water height is always at y = 0.0
-  const auto waterPositionY = 0.0f;
-  auto cameraPosition = camera->cameraPosition();
-  const auto distanceToMoveY = 2.0f * (camera->cameraPosition().y - waterPositionY);
-  cameraPosition.y -= distanceToMoveY;
-  camera->setCameraPosition(cameraPosition);
-  camera->invertPitch();
-
-  // Render to texture
-  const auto viewMatrix = camera->createViewMatrix();
-  renderSkybox(sceneMeshes.at(kSkyboxMeshId), viewMatrix, viewToClipMatrix,
-               sceneProgramObjects.at(kSkyboxProgramObjectName));
-  renderTerrainImpl(sceneMeshes.at(kTerrainMeshId), lightData, viewMatrix, viewToClipMatrix,
-                    sceneProgramObjects.at(kTerrainGeneratorProgramObjectName));
-
-  // Change camera back to original state
-  cameraPosition.y += distanceToMoveY;
-  camera->setCameraPosition(cameraPosition);
-  camera->invertPitch();
-
-  glDisable(GL_CLIP_DISTANCE1);
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  // Skybox
+  renderSkybox(skyboxMesh, viewMatrix, viewToClipMatrix, sceneProgramObjects.at(kSkyboxProgramObjectName));
 }
 
 static void renderMaps(const Mesh &terrainMesh, const glm::mat4 &viewMatrix,
@@ -102,48 +117,6 @@ void renderFalloffMap(const Mesh &terrainMesh, const glm::mat4 &viewMatrix, cons
   renderMaps(terrainMesh, viewMatrix, viewToClipMatrix, terrainGeneratorDebugProgramObject);
 }
 
-void renderTerrain(SceneData *sceneData, const double frameTime, const glm::mat4 &viewToClipMatrix,
-                   const bool isWireFrame, const SceneProgramObjects &sceneProgramObjects) {
-  const auto &terrainMesh = sceneData->meshIdToMesh.at(kTerrainMeshId);
-  const auto &skyboxMesh = sceneData->meshIdToMesh.at(kSkyboxMeshId);
-
-  // Render reflection of scene to texture
-  renderReflectionTexture(sceneData->meshIdToMesh, sceneData->lightData,
-                          sceneData->sceneFrameBuffer.fboHandle, &sceneData->fpsCamera, viewToClipMatrix,
-                          sceneProgramObjects);
-
-  // Render scene
-  const auto viewMatrix = sceneData->fpsCamera.createViewMatrix();
-
-  // Skybox
-  renderSkybox(skyboxMesh, viewMatrix, viewToClipMatrix, sceneProgramObjects.at(kSkyboxProgramObjectName));
-
-  // Terrain
-  glActiveTexture(GL_TEXTURE3);
-  glBindTexture(GL_TEXTURE_2D, sceneData->sceneFrameBuffer.fboTexture);
-  glActiveTexture(GL_TEXTURE4);
-  glBindTexture(GL_TEXTURE_2D, terrainMesh.textureHandles[3]);
-
-  const auto terrainGeneratorProgramObject = sceneProgramObjects.at(kTerrainGeneratorProgramObjectName);
-  sceneData->terrainData.waterDistortionMoveFactor +=
-      sceneData->terrainData.waterDistortionSpeed * float(frameTime);
-  sceneData->terrainData.waterDistortionMoveFactor =
-      std::fmod(sceneData->terrainData.waterDistortionMoveFactor, 1.0f);
-
-  setUniform(terrainGeneratorProgramObject, ufWaterDistortionMoveFactorName,
-             sceneData->terrainData.waterDistortionMoveFactor);
-  setUniform(terrainGeneratorProgramObject, ufWorldCameraPos, sceneData->fpsCamera.cameraPosition());
-
-  if (isWireFrame) {
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-  } else {
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-  }
-
-  renderTerrainImpl(terrainMesh, sceneData->lightData, sceneData->fpsCamera.createViewMatrix(),
-                    viewToClipMatrix, terrainGeneratorProgramObject);
-}
-
 void renderQuad(const Mesh &quadMesh, const GLuint fboTexture, const glm::mat4 &viewMatrix,
                 const glm::mat4 &viewToClipMatrix, const GLuint quadProgramObject) {
   glActiveTexture(GL_TEXTURE0);
@@ -180,26 +153,31 @@ void renderWater(const Mesh &waterMesh, const GLuint fboTexture, const glm::mat4
   glUseProgram(0);
 }
 
-void renderSkybox(const Mesh &skyboxMesh, const glm::mat4 &viewMatrix, const glm::mat4 &viewToClipMatrix,
-                  const GLuint skyboxProgramObject) {
-  glDisable(GL_CULL_FACE);
-  glDepthMask(GL_FALSE);
+void renderTerrainReflectionTexture(const SceneData &sceneData, const glm::mat4 &viewMatrix,
+                                    const glm::mat4 &viewToClipMatrix,
+                                    const SceneProgramObjects &sceneProgramObjects) {
+  glBindFramebuffer(GL_FRAMEBUFFER, sceneData.frameBufferObject.fboHandle);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glEnable(GL_CLIP_DISTANCE1);
 
-  glBindVertexArray(skyboxMesh.vaoHandle);
-  glUseProgram(skyboxProgramObject);
-  {
+  // Render to texture
+  renderSceneImpl(sceneData, sceneData.frameBufferObject.width, sceneData.frameBufferObject.height,
+                  viewMatrix, viewToClipMatrix, false, sceneProgramObjects);
 
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxMesh.textureHandles[0]);
+  glDisable(GL_CLIP_DISTANCE1);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
 
-    setUniform(skyboxProgramObject, ufModelToWorldMatrixName, skyboxMesh.modelTransformation);
-    setUniform(skyboxProgramObject, ufWorldToViewMatrixName, glm::mat4(glm::mat3(viewMatrix)));
-    setUniform(skyboxProgramObject, ufViewToClipMatrixName, viewToClipMatrix);
+void renderTerrain(const WindowData &windowData, const SceneData &sceneData, const glm::mat4 &viewMatrix,
+                   const glm::mat4 &viewToClipMatrix, const bool isWireFrame,
+                   const SceneProgramObjects &sceneProgramObjects) {
+  const auto &terrainMesh = sceneData.meshIdToMesh.at(kTerrainMeshId);
 
-    glDrawElements(GL_TRIANGLES, GLsizei(skyboxMesh.indices.size()), GL_UNSIGNED_INT, (void *)0);
-  }
-  glUseProgram(0);
+  glActiveTexture(GL_TEXTURE3);
+  glBindTexture(GL_TEXTURE_2D, sceneData.frameBufferObject.fboTexture);
+  glActiveTexture(GL_TEXTURE4);
+  glBindTexture(GL_TEXTURE_2D, terrainMesh.textureHandles[3]); // Dudv map
 
-  glEnable(GL_CULL_FACE);
-  glDepthMask(GL_TRUE);
+  renderSceneImpl(sceneData, windowData.width, windowData.height, viewMatrix, viewToClipMatrix, isWireFrame,
+                  sceneProgramObjects);
 }

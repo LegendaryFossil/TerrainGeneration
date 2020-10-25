@@ -19,7 +19,6 @@ constexpr auto ufWaterDistortionMoveFactorName = "waterDistortionMoveFactor";
 constexpr auto ufViewportSizeName = "viewportSize";
 constexpr auto ufViewToClipMatrixName = "viewToClipMatrix";
 constexpr auto ufWorldLightName = "worldLight";
-constexpr auto ufWorldCameraPos = "worldCameraPos";
 constexpr auto ufWorldToViewMatrixName = "worldToViewMatrix";
 constexpr auto ufHorizontalClipPlane = "horizontalClipPlane";
 constexpr auto ufDebugSettings = "debugSettings";
