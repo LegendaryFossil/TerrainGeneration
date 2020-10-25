@@ -26,7 +26,8 @@ void destroyUI() {
   ImGui::DestroyContext();
 }
 
-void handleUIInput(SceneSettings *sceneSettings, TerrainData *terrainData, MeshIdToMesh *meshIdToMesh) {
+void handleUIInput(SceneSettings *sceneSettings, TerrainData *terrainData, SceneData::SkyBoxData *skyboxData,
+                   MeshIdToMesh *meshIdToMesh) {
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
@@ -64,6 +65,10 @@ void handleUIInput(SceneSettings *sceneSettings, TerrainData *terrainData, MeshI
   }
   if (ImGui::RadioButton("Light control", &e, 1)) {
     sceneSettings->controlMode = SceneSettings::CONTROL_MODE::LIGHT;
+  }
+
+  if (ImGui::SliderFloat("Skybox Rotation Speed", &skyboxData->skyboxRotationSpeed, 1.0f, 30.0f)) {
+    // Do nothing, just update the variable
   }
 
   ImGui::Text("Terrain settings");

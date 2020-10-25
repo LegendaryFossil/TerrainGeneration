@@ -39,7 +39,6 @@ static void renderSceneImpl(const SceneData &sceneData, const unsigned int frame
   }
 
   const auto &terrainMesh = sceneData.meshIdToMesh.at(kTerrainMeshId);
-  const auto &skyboxMesh = sceneData.meshIdToMesh.at(kSkyboxMeshId);
 
   glBindVertexArray(terrainMesh.vaoHandle);
   const auto terrainGeneratorProgramObject = sceneProgramObjects.at(kTerrainGeneratorProgramObjectName);
@@ -74,7 +73,10 @@ static void renderSceneImpl(const SceneData &sceneData, const unsigned int frame
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
   // Skybox
-  renderSkybox(skyboxMesh, viewMatrix, viewToClipMatrix, sceneProgramObjects.at(kSkyboxProgramObjectName));
+  const auto skyboxViewMatrix =
+      glm::rotate(viewMatrix, glm::radians(sceneData.skyboxData.skyboxRotation), glm::vec3(0.0f, 1.0f, 0.0f));
+  renderSkybox(sceneData.meshIdToMesh.at(kSkyboxMeshId), skyboxViewMatrix, viewToClipMatrix,
+               sceneProgramObjects.at(kSkyboxProgramObjectName));
 }
 
 static void renderMaps(const Mesh &terrainMesh, const glm::mat4 &viewMatrix,

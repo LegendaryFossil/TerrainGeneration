@@ -33,7 +33,7 @@ void main(){
 	// TerrainGridPointSpacing adds the scaling "effect"
 	vec4 vertex;
 	vertex.xz = uvTE.st * textureSize * terrainGridPointSpacing;
-	vertex.y = texture(heightMapTexture, uvTE).r * heightMultiplier;
+	vertex.y = texture(heightMapTexture, uvTE).r * heightMultiplier * terrainGridPointSpacing;
 	vertex.w = 1.0;
 
 	vec4 worldPosition = modelToWorldMatrix * vertex;

@@ -4,6 +4,7 @@
 
 #include "meshGenerator.h"
 #include "sceneShaders.h"
+#include "sceneDefs.h"
 
 struct TerrainData;
 struct GLFWwindow;
@@ -23,4 +24,5 @@ struct SceneSettings {
 void initUI(GLFWwindow *window, const std::string &glslVersion);
 void destroyUI();
 void renderUI();
-void handleUIInput(SceneSettings *sceneSettings, TerrainData *terrainData, MeshIdToMesh *meshIdToMesh);
+void handleUIInput(SceneSettings *sceneSettings, TerrainData *terrainData, SceneData::SkyBoxData *skyboxData,
+                   MeshIdToMesh *meshIdToMesh);

@@ -145,7 +145,10 @@ void updateScene() {
   sceneData.terrainData.waterDistortionMoveFactor =
       std::fmod(sceneData.terrainData.waterDistortionMoveFactor, 1.0f);
 
-  handleUIInput(&sceneSettings, &sceneData.terrainData, &sceneData.meshIdToMesh, sceneProgramObjects);
+  sceneData.skyboxData.skyboxRotation +=
+      sceneData.skyboxData.skyboxRotationSpeed * float(frameTimeData.frameTime);
+
+  handleUIInput(&sceneSettings, &sceneData.terrainData, &sceneData.skyboxData, &sceneData.meshIdToMesh);
 }
 
 void renderScene() {
@@ -183,7 +186,7 @@ void renderScene() {
     camera.setCameraPosition(cameraPosition);
     camera.invertPitch();
     renderTerrainReflectionTexture(sceneData, camera.createViewMatrix(), viewToClipMatrix,
-                                       sceneProgramObjects);
+                                   sceneProgramObjects);
 
     // Change camera back to original state
     cameraPosition.y += distanceToMoveY;
@@ -191,8 +194,8 @@ void renderScene() {
     camera.invertPitch();
 
     renderTerrain(windowData, sceneData, camera.createViewMatrix(), viewToClipMatrix,
-                      sceneSettings.renderMode == SceneSettings::RENDER_MODE::MESH ? false : true,
-                      sceneProgramObjects);
+                  sceneSettings.renderMode == SceneSettings::RENDER_MODE::MESH ? false : true,
+                  sceneProgramObjects);
   } break;
   default:
     assert(false);
@@ -267,7 +270,7 @@ void initTerrainGenerator() {
   printf("Renderer: %s\n", renderer);
   printf("OpenGL version supported %s\n", version);
 
-  // glfwSwapInterval(1); // Gives input latency
+  glfwSwapInterval(1);
 
   initUI(windowData.window, "#version 130");
 
