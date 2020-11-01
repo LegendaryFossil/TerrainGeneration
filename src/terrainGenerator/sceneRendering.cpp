@@ -56,7 +56,8 @@ static void renderSceneImpl(const SceneData &sceneData, const unsigned int frame
     setUniform(terrainGeneratorProgramObject, ufNormalMatrix,
                glm::transpose(glm::inverse(glm::mat3(viewMatrix * terrainMesh.modelTransformation))));
     setUniform(terrainGeneratorProgramObject, ufViewToClipMatrixName, viewToClipMatrix);
-    setUniform(terrainGeneratorProgramObject, ufWorldLightName, sceneData.lightData.worldLightPosition);
+    setUniform(terrainGeneratorProgramObject, ufWorldLightPositionName,
+               sceneData.lightData.worldLightPosition);
     setUniform(terrainGeneratorProgramObject, ufViewportSizeName,
                glm::vec2(frameBufferWidth, frameBufferHeight));
     setUniform(terrainGeneratorProgramObject, ufWaterDistortionMoveFactorName,
@@ -179,6 +180,15 @@ void renderTerrain(const WindowData &windowData, const SceneData &sceneData, con
   glBindTexture(GL_TEXTURE_2D, sceneData.frameBufferObject.fboTexture);
   glActiveTexture(GL_TEXTURE4);
   glBindTexture(GL_TEXTURE_2D, terrainMesh.textureHandles[3]); // Dudv map
+  glActiveTexture(GL_TEXTURE5);
+  glBindTexture(GL_TEXTURE_2D, terrainMesh.textureHandles[4]); // Normal map
+
+  const auto terrainGeneratorProgramObject = sceneProgramObjects.at(kTerrainGeneratorProgramObjectName);
+  setUniform(terrainGeneratorProgramObject, ufSpecularLightReflectionName,
+             sceneData.lightData.specularData.reflection);
+  setUniform(terrainGeneratorProgramObject, ufSpecularLightIntensityName,
+             sceneData.lightData.specularData.intensity); 
+  setUniform(terrainGeneratorProgramObject, ufShineDamper, sceneData.lightData.specularData.shineDamper);
 
   renderSceneImpl(sceneData, windowData.width, windowData.height, viewMatrix, viewToClipMatrix, isWireFrame,
                   sceneProgramObjects);

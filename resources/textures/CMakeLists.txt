@@ -1,5 +1,3 @@
-set(TEXTURES
-"waterDUDV.png"
-)
-
-install(FILES ${TEXTURES} DESTINATION "${TERRAIN_GENERATOR_EXE_PATH}/resources/textures")
+add_subdirectory(skybox)
+add_subdirectory(waterDuDv)
+add_subdirectory(waterNormalMap)

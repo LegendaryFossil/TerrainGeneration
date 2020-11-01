@@ -4,6 +4,7 @@
 #include "imGui/imgui.h"
 #include "imGui/imgui_impl_glfw.h"
 #include "imGui/imgui_impl_opengl3.h"
+#include "lightDefs.h"
 #include "meshGenerator.h"
 #include "sceneShaders.h"
 #include "shaderLoader.h"
@@ -26,8 +27,8 @@ void destroyUI() {
   ImGui::DestroyContext();
 }
 
-void handleUIInput(SceneSettings *sceneSettings, TerrainData *terrainData, SceneData::SkyBoxData *skyboxData,
-                   MeshIdToMesh *meshIdToMesh) {
+void handleUIInput(SceneSettings *sceneSettings, TerrainData *terrainData, LightData *lightData,
+                   SceneData::SkyBoxData *skyboxData, MeshIdToMesh *meshIdToMesh) {
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
@@ -59,6 +60,8 @@ void handleUIInput(SceneSettings *sceneSettings, TerrainData *terrainData, Scene
     sceneSettings->renderMode = SceneSettings::RENDER_MODE::WIREFRAME;
   }
 
+  ImGui::NewLine();
+  ImGui::Text("Scene control");
   static int e = 0;
   if (ImGui::RadioButton("Camera control", &e, 0)) {
     sceneSettings->controlMode = SceneSettings::CONTROL_MODE::CAMERA;
@@ -67,10 +70,26 @@ void handleUIInput(SceneSettings *sceneSettings, TerrainData *terrainData, Scene
     sceneSettings->controlMode = SceneSettings::CONTROL_MODE::LIGHT;
   }
 
-  if (ImGui::SliderFloat("Skybox Rotation Speed", &skyboxData->skyboxRotationSpeed, 1.0f, 30.0f)) {
+  ImGui::NewLine();
+  ImGui::Text("Light settings");
+  if (ImGui::ColorEdit3("Specular Reflection", glm::value_ptr(lightData->specularData.reflection),
+                        ImGuiColorEditFlags_NoInputs)) {
+    // Do nothing, just update the variable
+  }
+  if (ImGui::SliderFloat("Specular intensity", &lightData->specularData.intensity, 0.0f, 1.0f)) {
+    // Do nothing, just update the variable
+  }
+  if (ImGui::SliderFloat("Shine damper", &lightData->specularData.shineDamper, 0.0f, 100.0f)) {
     // Do nothing, just update the variable
   }
 
+  ImGui::NewLine();
+  ImGui::Text("Skybox settings");
+  if (ImGui::SliderFloat("Skybox Rotation Speed", &skyboxData->skyboxRotationSpeed, 0.0f, 10.0f)) {
+    // Do nothing, just update the variable
+  }
+
+  ImGui::NewLine();
   ImGui::Text("Terrain settings");
   ImGui::SetNextItemOpen(true, ImGuiCond_FirstUseEver);
   if (ImGui::TreeNode("Noise Map settings")) {
@@ -100,7 +119,7 @@ void handleUIInput(SceneSettings *sceneSettings, TerrainData *terrainData, Scene
     // Do nothing, just update the variable
   }
 
-  if (ImGui::SliderFloat("Water distortion speed", &terrainData->waterDistortionSpeed, 0.0f, 1.0f)) {
+  if (ImGui::SliderFloat("Water distortion speed", &terrainData->waterDistortionSpeed, 0.0f, 0.1f)) {
     // Do nothing, just update the variable
   }
 

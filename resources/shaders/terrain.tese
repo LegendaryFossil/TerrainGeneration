@@ -8,7 +8,7 @@ uniform float heightMultiplier;
 uniform float terrainGridPointSpacing;
 uniform float patchSize;
 
-uniform vec4 worldLight;
+uniform vec4 worldLightPosition;
 uniform vec4 horizontalClipPlane;
 
 uniform mat4 modelToWorldMatrix;
@@ -18,8 +18,8 @@ uniform mat4 viewToClipMatrix;
 in vec2 positionTC[];
 
 out vec2 uvTE; // Texture coordinates
-out vec3 eyePositionTE; // Vertex position as seen from camera
-out vec3 eyeLightTE; // Light as seen from the camera
+out vec3 viewPositionTE; // Vertex position as seen from camera
+out vec3 viewLightPositionTE; // Light as seen from the camera
 out vec4 clipSpacePosTE; // Clip space vertex
 
 void main(){
@@ -41,8 +41,8 @@ void main(){
 
 	vec4 viewPosition = worldToViewMatrix * worldPosition;
 		
-	eyePositionTE = viewPosition.xyz;
-	eyeLightTE = (worldToViewMatrix*worldLight).xyz;
+	viewPositionTE = viewPosition.xyz;
+	viewLightPositionTE = (worldToViewMatrix*worldLightPosition).xyz;
 
 	clipSpacePosTE = viewToClipMatrix * viewPosition;
 	gl_Position = clipSpacePosTE;

@@ -135,27 +135,25 @@ void updateScene() {
   glfwPollEvents();
 
   if (sceneSettings.controlMode == SceneSettings::CONTROL_MODE::CAMERA) {
-    handleCameraInput(&sceneData.fpsCamera, controlInputData, frameTimeData.frameTime);
+    handleCameraInput(&sceneData.fpsCamera, controlInputData, frameTimeData.frameTimeInSec);
   } else if (sceneSettings.controlMode == SceneSettings::CONTROL_MODE::LIGHT) {
-    handleLightInput(&sceneData.lightData, controlInputData, frameTimeData.frameTime);
+    handleLightInput(&sceneData.lightData, controlInputData, frameTimeData.frameTimeInSec);
   }
 
   sceneData.terrainData.waterDistortionMoveFactor +=
-      sceneData.terrainData.waterDistortionSpeed * float(frameTimeData.frameTime);
+      sceneData.terrainData.waterDistortionSpeed * float(frameTimeData.frameTimeInSec);
   sceneData.terrainData.waterDistortionMoveFactor =
       std::fmod(sceneData.terrainData.waterDistortionMoveFactor, 1.0f);
 
   sceneData.skyboxData.skyboxRotation +=
-      sceneData.skyboxData.skyboxRotationSpeed * float(frameTimeData.frameTime);
+      sceneData.skyboxData.skyboxRotationSpeed * float(frameTimeData.frameTimeInSec);
 
-  handleUIInput(&sceneSettings, &sceneData.terrainData, &sceneData.skyboxData, &sceneData.meshIdToMesh);
+  handleUIInput(&sceneSettings, &sceneData.terrainData, &sceneData.lightData, &sceneData.skyboxData,
+                &sceneData.meshIdToMesh);
 }
 
 void renderScene() {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-  // Measure time each frame
-  updateFrameTime(&frameTimeData);
 
   const auto viewToClipMatrix = glm::perspective(
       sceneData.viewFrustumData.fieldOfView, float(windowData.width) / float(windowData.height),
@@ -278,6 +276,9 @@ void initTerrainGenerator() {
   initSceneData();
 
   while (!glfwWindowShouldClose(windowData.window)) {
+    // Measure time each frame
+    updateFrameTime(&frameTimeData);
+
     updateScene();
     renderScene();
   }

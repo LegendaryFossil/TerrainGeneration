@@ -102,11 +102,19 @@ static Mesh generateMeshFromHeightMap(const NoiseMapData &noiseMapData, const bo
 
   int dudvWidth, dudvHeight;
   unsigned char *dudvPixelData = nullptr;
-  loadTexture("waterDUDV.png", texturePath, &dudvWidth, &dudvHeight, &dudvPixelData);
+  loadTexture("waterDuDv.png", waterDuDvTexturePath, &dudvWidth, &dudvHeight, &dudvPixelData);
   assert(dudvPixelData != nullptr);
   createTexture2D(&terrainMesh.textureHandles[3], GL_REPEAT, GL_NEAREST, dudvWidth, dudvHeight,
                   GL_UNSIGNED_BYTE, dudvPixelData);
   freeTexture(dudvPixelData);
+
+  int normalMapWidth, normalMapHeight;
+  unsigned char *normalMapPixelData = nullptr;
+  loadTexture("waterNormalMap.png", waterNormalMapTexturePath, &normalMapWidth, &normalMapHeight, &normalMapPixelData);
+  assert(normalMapPixelData != nullptr);
+  createTexture2D(&terrainMesh.textureHandles[4], GL_REPEAT, GL_NEAREST, normalMapWidth, normalMapHeight,
+                  GL_UNSIGNED_BYTE, normalMapPixelData);
+  freeTexture(normalMapPixelData);
 
   return terrainMesh;
 }

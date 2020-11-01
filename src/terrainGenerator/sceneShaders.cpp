@@ -37,6 +37,7 @@ SceneProgramObjects initSceneShaders(const WindowData &windowData, const SceneDa
   setUniform(terrainGeneratorProgramObject, ufFalloffMapTextureName, 2);
   setUniform(terrainGeneratorProgramObject, ufSceneTextureName, 3);
   setUniform(terrainGeneratorProgramObject, ufDuDvTextureName, 4);
+  setUniform(terrainGeneratorProgramObject, ufNormalMapTextureName, 5);
   setUniform(terrainGeneratorProgramObject, ufPatchSizeName, PATCH_SIZE);
   setUniform(terrainGeneratorProgramObject, ufTerrainGridPointSpacingName,
              sceneData.terrainData.gridPointSpacing);
@@ -44,8 +45,11 @@ SceneProgramObjects initSceneShaders(const WindowData &windowData, const SceneDa
   setUniform(terrainGeneratorProgramObject, ufPixelsPerTriangleName, sceneData.terrainData.pixelsPerTriangle);
   setUniform(terrainGeneratorProgramObject, ufViewportSizeName,
              glm::vec2(windowData.width, windowData.height));
-  setUniform(terrainGeneratorProgramObject, ufWorldLightName, sceneData.lightData.worldLightPosition);
   setUniform(terrainGeneratorProgramObject, ufHorizontalClipPlane, glm ::vec4(0.0f, 1.0f, 0.0f, 0.412f));
+  setUniform(terrainGeneratorProgramObject, ufWorldLightPositionName, sceneData.lightData.worldLightPosition);
+  setUniform(terrainGeneratorProgramObject, ufSpecularLightReflectionName, sceneData.lightData.specularData.reflection);
+  setUniform(terrainGeneratorProgramObject, ufSpecularLightIntensityName, sceneData.lightData.specularData.intensity);
+  setUniform(terrainGeneratorProgramObject, ufShineDamper, sceneData.lightData.specularData.shineDamper);
 
   // Terrain noise/color/falloff map shader
   std::vector<GLuint> terrainGeneratorDebugShaderObjects;

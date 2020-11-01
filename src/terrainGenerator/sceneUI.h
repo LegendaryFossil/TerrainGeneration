@@ -7,6 +7,7 @@
 #include "sceneDefs.h"
 
 struct TerrainData;
+struct LightData;
 struct GLFWwindow;
 
 // Scene settings
@@ -24,5 +25,5 @@ struct SceneSettings {
 void initUI(GLFWwindow *window, const std::string &glslVersion);
 void destroyUI();
 void renderUI();
-void handleUIInput(SceneSettings *sceneSettings, TerrainData *terrainData, SceneData::SkyBoxData *skyboxData,
+void handleUIInput(SceneSettings *sceneSettings, TerrainData *terrainData, LightData *lightData, SceneData::SkyBoxData *skyboxData,
                    MeshIdToMesh *meshIdToMesh);
