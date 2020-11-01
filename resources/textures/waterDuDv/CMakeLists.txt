@@ -1,7 +1,7 @@
 SET(WATER_DUDV_PATH "${PROJECT_SOURCE_DIR}/resources/textures/waterDuDv")
 
 set(TEXTURES
-"${WATER_DUDV_PATH}/waterDuDv.png"
+"${WATER_DUDV_PATH}/waterDuDv1.png"
 "${WATER_DUDV_PATH}/waterDuDv2.png"
 "${WATER_DUDV_PATH}/waterDuDv3.png"
 "${WATER_DUDV_PATH}/waterDuDv4.png"

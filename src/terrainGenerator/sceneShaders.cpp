@@ -17,8 +17,18 @@ SceneProgramObjects initSceneShaders(const WindowData &windowData, const SceneDa
   skyboxShaderObjects.push_back(compileShader("skybox.vert", GL_VERTEX_SHADER));
   skyboxShaderObjects.push_back(compileShader("skybox.frag", GL_FRAGMENT_SHADER));
   const auto skyboxProgramObject =
-      programObjects.emplace(kSkyboxProgramObjectName, createProgramObject(skyboxShaderObjects)).first->second;
+      programObjects.emplace(kSkyboxProgramObjectName, createProgramObject(skyboxShaderObjects))
+          .first->second;
   setUniform(skyboxProgramObject, ufSkyboxTextureName, 0);
+
+  // Light shader
+  std::vector<GLuint> lightShaderObjects;
+  lightShaderObjects.push_back(compileShader("light.vert", GL_VERTEX_SHADER));
+  lightShaderObjects.push_back(compileShader("light.frag", GL_FRAGMENT_SHADER));
+  const auto lightProgramObject =
+      programObjects.emplace(kLightShaderProgramObjectName, createProgramObject(lightShaderObjects))
+          .first->second;
+  setUniform(lightProgramObject, ufSceneTextureName, 0);
 
   // Terrain generator shader
   std::vector<GLuint> terrainGeneratorShaderObjects;
@@ -47,8 +57,10 @@ SceneProgramObjects initSceneShaders(const WindowData &windowData, const SceneDa
              glm::vec2(windowData.width, windowData.height));
   setUniform(terrainGeneratorProgramObject, ufHorizontalClipPlane, glm ::vec4(0.0f, 1.0f, 0.0f, 0.412f));
   setUniform(terrainGeneratorProgramObject, ufWorldLightPositionName, sceneData.lightData.worldLightPosition);
-  setUniform(terrainGeneratorProgramObject, ufSpecularLightReflectionName, sceneData.lightData.specularData.reflection);
-  setUniform(terrainGeneratorProgramObject, ufSpecularLightIntensityName, sceneData.lightData.specularData.intensity);
+  setUniform(terrainGeneratorProgramObject, ufSpecularLightReflectionName,
+             sceneData.lightData.specularData.reflection);
+  setUniform(terrainGeneratorProgramObject, ufSpecularLightIntensityName,
+             sceneData.lightData.specularData.intensity);
   setUniform(terrainGeneratorProgramObject, ufShineDamper, sceneData.lightData.specularData.shineDamper);
 
   // Terrain noise/color/falloff map shader
@@ -76,15 +88,6 @@ SceneProgramObjects initSceneShaders(const WindowData &windowData, const SceneDa
       programObjects.emplace(kWaterProgramObjectName, createProgramObject(waterShaderObjects)).first->second;
 
   setUniform(waterProgramObject, ufSceneTextureName, 0);
-
-  // Quad shader
-  std::vector<GLuint> quadShaderObjects; // deleeeeeeeete
-  quadShaderObjects.push_back(compileShader("quad.vert", GL_VERTEX_SHADER));
-  quadShaderObjects.push_back(compileShader("quad.frag", GL_FRAGMENT_SHADER));
-  const auto quadProgramObject =
-      programObjects.emplace(kQuadShaderProgramObjectName, createProgramObject(quadShaderObjects))
-          .first->second;
-  setUniform(quadProgramObject, ufSceneTextureName, 0);
 
   return programObjects;
 }

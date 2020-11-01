@@ -1,11 +1,11 @@
 #include "sceneControl.h"
 
 #include "GL/glew.h"
-
 #include "GLFW/glfw3.h"
-
 #include "camera.h"
+#include "glm\glm.hpp"
 #include "lightDefs.h"
+#include "meshGenerator.h"
 
 constexpr auto baseSpeed = 100.0f;
 
@@ -37,7 +37,8 @@ void handleCameraInput(Camera *camera, const ControlInputData &controlInputData,
   }
 }
 
-void handleLightInput(LightData *lightData, const ControlInputData &controlInputData, const double frameTime) {
+void handleLightInput(Mesh *lightMesh, LightData *lightData, const ControlInputData &controlInputData,
+                      const double frameTime) {
   GLfloat lightSpeed = baseSpeed * float(frameTime);
 
   if (controlInputData.keyState[GLFW_KEY_W]) {
@@ -53,4 +54,8 @@ void handleLightInput(LightData *lightData, const ControlInputData &controlInput
   } else if (controlInputData.keyState[GLFW_KEY_E]) {
     lightData->worldLightPosition.y -= lightSpeed;
   }
+
+  lightMesh->modelTransformation =
+      glm::translate(glm::identity<glm::mat4>(), glm::vec3(lightData->worldLightPosition));
+  lightMesh->modelTransformation = glm::scale(lightMesh->modelTransformation, glm::vec3(5.0f));
 }

@@ -9,6 +9,8 @@
 
 constexpr auto MAX_TEXTURES = 10;
 
+struct LightData;
+
 struct Vertex {
   union {
     glm::vec2 position2f;
@@ -34,12 +36,13 @@ struct Mesh {
 
 constexpr auto kSkyboxMeshId = "skybox";
 constexpr auto kTerrainMeshId = "terrain";
+constexpr auto kLightMeshId = "light";
 constexpr auto kWaterMeshId = "water";
-constexpr auto kQuadMeshId = "quad";
 
 using MeshIdToMesh = std::unordered_map<std::string, Mesh>;
 
-MeshIdToMesh initSceneMeshes(const TerrainData &terrainData);
+MeshIdToMesh initSceneMeshes(const TerrainData &terrainData, const LightData &lightData);
 
 void updateTerrainMeshTexture(Mesh *terrainMesh, const NoiseMapData &noiseMapData, const bool useFalloffMap,
                               const std::vector<TerrainType> &terrainTypes);
+void updateTerrainMeshWaterTextures(Mesh *terrainMesh, const std::string mapIndex);

@@ -115,7 +115,7 @@ static void initFrameBuffers() {
 
 void initSceneData() {
   sceneData.terrainData = getDefaultTerrainData();
-  sceneData.meshIdToMesh = initSceneMeshes(sceneData.terrainData);
+  sceneData.meshIdToMesh = initSceneMeshes(sceneData.terrainData, sceneData.lightData);
   sceneProgramObjects = initSceneShaders(windowData, sceneData);
   initFrameBuffers();
 }
@@ -137,7 +137,8 @@ void updateScene() {
   if (sceneSettings.controlMode == SceneSettings::CONTROL_MODE::CAMERA) {
     handleCameraInput(&sceneData.fpsCamera, controlInputData, frameTimeData.frameTimeInSec);
   } else if (sceneSettings.controlMode == SceneSettings::CONTROL_MODE::LIGHT) {
-    handleLightInput(&sceneData.lightData, controlInputData, frameTimeData.frameTimeInSec);
+    handleLightInput(&sceneData.meshIdToMesh.at(kLightMeshId), &sceneData.lightData, controlInputData,
+                     frameTimeData.frameTimeInSec);
   }
 
   sceneData.terrainData.waterDistortionMoveFactor +=
@@ -191,7 +192,10 @@ void renderScene() {
     camera.setCameraPosition(cameraPosition);
     camera.invertPitch();
 
-    renderTerrain(windowData, sceneData, camera.createViewMatrix(), viewToClipMatrix,
+    const auto viewMatrix = camera.createViewMatrix();
+    renderLight(sceneData.meshIdToMesh.at(kLightMeshId), viewMatrix, viewToClipMatrix,
+                sceneProgramObjects.at(kLightShaderProgramObjectName));
+    renderTerrain(windowData, sceneData, viewMatrix, viewToClipMatrix,
                   sceneSettings.renderMode == SceneSettings::RENDER_MODE::MESH ? false : true,
                   sceneProgramObjects);
   } break;

@@ -120,21 +120,18 @@ void renderFalloffMap(const Mesh &terrainMesh, const glm::mat4 &viewMatrix, cons
   renderMaps(terrainMesh, viewMatrix, viewToClipMatrix, terrainGeneratorDebugProgramObject);
 }
 
-void renderQuad(const Mesh &quadMesh, const GLuint fboTexture, const glm::mat4 &viewMatrix,
-                const glm::mat4 &viewToClipMatrix, const GLuint quadProgramObject) {
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, fboTexture);
-
-  glBindVertexArray(quadMesh.vaoHandle);
-  glUseProgram(quadProgramObject);
+void renderLight(const Mesh &lightMesh, const glm::mat4 &viewMatrix, const glm::mat4 &viewToClipMatrix,
+                 const GLuint lightProgramObject) {
+  glBindVertexArray(lightMesh.vaoHandle);
+  glUseProgram(lightProgramObject);
   {
-    setUniform(quadProgramObject, ufModelToWorldMatrixName, quadMesh.modelTransformation);
+    setUniform(lightProgramObject, ufModelToWorldMatrixName, lightMesh.modelTransformation);
 
-    setUniform(quadProgramObject, ufWorldToViewMatrixName, viewMatrix);
+    setUniform(lightProgramObject, ufWorldToViewMatrixName, viewMatrix);
 
-    setUniform(quadProgramObject, ufViewToClipMatrixName, viewToClipMatrix);
+    setUniform(lightProgramObject, ufViewToClipMatrixName, viewToClipMatrix);
 
-    glDrawElements(GL_TRIANGLES, GLsizei(quadMesh.indices.size()), GL_UNSIGNED_INT, (void *)0);
+    glDrawElements(GL_TRIANGLES, GLsizei(lightMesh.indices.size()), GL_UNSIGNED_INT, (void *)0);
   }
   glUseProgram(0);
 }
@@ -187,7 +184,7 @@ void renderTerrain(const WindowData &windowData, const SceneData &sceneData, con
   setUniform(terrainGeneratorProgramObject, ufSpecularLightReflectionName,
              sceneData.lightData.specularData.reflection);
   setUniform(terrainGeneratorProgramObject, ufSpecularLightIntensityName,
-             sceneData.lightData.specularData.intensity); 
+             sceneData.lightData.specularData.intensity);
   setUniform(terrainGeneratorProgramObject, ufShineDamper, sceneData.lightData.specularData.shineDamper);
 
   renderSceneImpl(sceneData, windowData.width, windowData.height, viewMatrix, viewToClipMatrix, isWireFrame,

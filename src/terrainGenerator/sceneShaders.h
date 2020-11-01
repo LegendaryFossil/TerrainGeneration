@@ -9,10 +9,10 @@ struct WindowData;
 struct SceneData;
 
 constexpr auto kSkyboxProgramObjectName = "skybox";
+constexpr auto kLightShaderProgramObjectName = "light";
 constexpr auto kTerrainGeneratorProgramObjectName = "terrainGenerator";
 constexpr auto kTerrainGeneratorDebugProgramObjectName = "terrainGeneratorDebug";
 constexpr auto kWaterProgramObjectName = "water";
-constexpr auto kQuadShaderProgramObjectName = "quad";
 
 using SceneProgramObjects = std::unordered_map<std::string, GLuint>;
 

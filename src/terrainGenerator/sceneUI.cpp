@@ -123,6 +123,20 @@ void handleUIInput(SceneSettings *sceneSettings, TerrainData *terrainData, Light
     // Do nothing, just update the variable
   }
 
+  if (ImGui::BeginCombo("Water Distortion map", sceneSettings->currentWaterDuDv.c_str())) {
+    for (int i = 0; i < sceneSettings->waterDuDvs.size(); ++i) {
+      const auto isSelected = sceneSettings->currentWaterDuDv == sceneSettings->waterDuDvs[i];
+      if (ImGui::Selectable(sceneSettings->waterDuDvs[i].c_str(), isSelected)) {
+        sceneSettings->currentWaterDuDv = sceneSettings->waterDuDvs[i];
+        updateTerrainMeshWaterTextures(&meshIdToMesh->at(kTerrainMeshId), sceneSettings->currentWaterDuDv);
+      }
+
+      if (isSelected)
+        ImGui::SetItemDefaultFocus();
+    }
+    ImGui::EndCombo();
+  }
+
   if (ImGui::SliderInt("Pixels per triangle", &terrainData->pixelsPerTriangle, 1, 30)) {
     // Do nothing, just update the variable
   }
