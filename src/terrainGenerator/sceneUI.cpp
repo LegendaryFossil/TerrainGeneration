@@ -101,7 +101,7 @@ void handleUIInput(SceneSettings *sceneSettings, TerrainData *terrainData, Light
         ImGui::SliderFloat("Octave offset X", &terrainData->noiseMapData.octaveOffset.x, 0.0f, 2000.0f) ||
         ImGui::SliderFloat("Octave offset Y", &terrainData->noiseMapData.octaveOffset.y, 0.0f, 2000.0f)) {
       updateTerrainMeshTexture(&meshIdToMesh->at(kTerrainMeshId), terrainData->noiseMapData,
-                               terrainData->useFalloffMap, terrainData->terrainTypes);
+                               terrainData->useFalloffMap, terrainData->terrainProperties);
     }
 
     ImGui::TreePop();
@@ -109,7 +109,7 @@ void handleUIInput(SceneSettings *sceneSettings, TerrainData *terrainData, Light
 
   if (ImGui::Checkbox("Use falloff map", &terrainData->useFalloffMap)) {
     updateTerrainMeshTexture(&meshIdToMesh->at(kTerrainMeshId), terrainData->noiseMapData,
-                             terrainData->useFalloffMap, terrainData->terrainTypes);
+                             terrainData->useFalloffMap, terrainData->terrainProperties);
   }
 
   if (ImGui::SliderFloat("Terrain grid spacing", &terrainData->gridPointSpacing, 1.0f, 10.0f)) {
@@ -143,14 +143,14 @@ void handleUIInput(SceneSettings *sceneSettings, TerrainData *terrainData, Light
 
   ImGui::SetNextItemOpen(true, ImGuiCond_FirstUseEver);
   if (ImGui::TreeNode("Terrain type settings")) {
-    for (size_t i = 0; i < terrainData->terrainTypes.size(); i++) {
+    for (size_t i = 0; i < terrainData->terrainProperties.size(); i++) {
       ImGui::PushID(int(i));
-      if (ImGui::TreeNode(terrainData->terrainTypes[i].name.data())) {
-        if (ImGui::SliderFloat("Height", &terrainData->terrainTypes[i].height, 0.0f, 1.0f) ||
-            ImGui::ColorEdit3("Color", glm::value_ptr(terrainData->terrainTypes[i].color),
+      if (ImGui::TreeNode(terrainData->terrainProperties[i].name.data())) {
+        if (ImGui::SliderFloat("Height", &terrainData->terrainProperties[i].height, 0.0f, 1.0f) ||
+            ImGui::ColorEdit3("Color", glm::value_ptr(terrainData->terrainProperties[i].color),
                               ImGuiColorEditFlags_NoInputs)) {
           updateTerrainMeshTexture(&meshIdToMesh->at(kTerrainMeshId), terrainData->noiseMapData,
-                                   terrainData->useFalloffMap, terrainData->terrainTypes);
+                                   terrainData->useFalloffMap, terrainData->terrainProperties);
         }
         ImGui::TreePop();
       }

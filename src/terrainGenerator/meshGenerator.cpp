@@ -68,7 +68,7 @@ static Mesh generateMeshHeightMapVertices(const int mapWidth, const int mapHeigh
 }
 
 static Mesh generateMeshFromHeightMap(const NoiseMapData &noiseMapData, const bool useFalloffMap,
-                                      const std::vector<TerrainType> &terrainTypes) {
+                                      const std::vector<TerrainProperty> &terrainProperties) {
   const auto noiseMap = generateNoiseMap(noiseMapData, useFalloffMap);
 
   Mesh terrainMesh = generateMeshHeightMapVertices(noiseMapData.width, noiseMapData.height, noiseMap);
@@ -97,7 +97,7 @@ static Mesh generateMeshFromHeightMap(const NoiseMapData &noiseMapData, const bo
   createTexture2D(&terrainMesh.textureHandles[0], GL_CLAMP_TO_EDGE, GL_NEAREST, noiseMapData.width,
                   noiseMapData.height, GL_FLOAT, generateNoiseMapTexture(noiseMap).data());
   createTexture2D(&terrainMesh.textureHandles[1], GL_CLAMP_TO_EDGE, GL_NEAREST, noiseMapData.width,
-                  noiseMapData.height, GL_FLOAT, generateColorMapTexture(noiseMap, terrainTypes).data());
+                  noiseMapData.height, GL_FLOAT, generateColorMapTexture(noiseMap, terrainProperties).data());
   createTexture2D(&terrainMesh.textureHandles[2], GL_CLAMP_TO_EDGE, GL_NEAREST, noiseMapData.width,
                   noiseMapData.height, GL_FLOAT, generateFalloffMap(noiseMapData.width).data());
 
@@ -371,7 +371,7 @@ MeshIdToMesh initSceneMeshes(const TerrainData &terrainData, const LightData &li
 
   meshIdToMesh.emplace(kTerrainMeshId,
                        generateMeshFromHeightMap(terrainData.noiseMapData, terrainData.useFalloffMap,
-                                                 terrainData.terrainTypes));
+                                                 terrainData.terrainProperties));
 
   meshIdToMesh.emplace(kLightMeshId, generateLightMesh(lightData));
 
@@ -382,12 +382,12 @@ MeshIdToMesh initSceneMeshes(const TerrainData &terrainData, const LightData &li
 }
 
 void updateTerrainMeshTexture(Mesh *terrainMesh, const NoiseMapData &noiseMapData, const bool useFalloffMap,
-                              const std::vector<TerrainType> &terrainTypes) {
+                              const std::vector<TerrainProperty> &terrainProperties) {
   const auto noiseMap = generateNoiseMap(noiseMapData, useFalloffMap);
   updateTexture2D(&terrainMesh->textureHandles[0], 0, 0, noiseMapData.width, noiseMapData.height, GL_FLOAT,
                   generateNoiseMapTexture(noiseMap).data());
   updateTexture2D(&terrainMesh->textureHandles[1], 0, 0, noiseMapData.width, noiseMapData.height, GL_FLOAT,
-                  generateColorMapTexture(noiseMap, terrainTypes).data());
+                  generateColorMapTexture(noiseMap, terrainProperties).data());
 }
 
 void updateTerrainMeshWaterTextures(Mesh *terrainMesh, const std::string mapIndex) {

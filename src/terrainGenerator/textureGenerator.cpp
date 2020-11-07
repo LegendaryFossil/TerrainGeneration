@@ -73,7 +73,7 @@ std::vector<glm::vec3> generateNoiseMapTexture(const NoiseMap &noiseMap) {
 }
 
 std::vector<glm::vec3> generateColorMapTexture(const NoiseMap &noiseMap,
-                                               const std::vector<TerrainType> &terrainTypes) {
+                                               const std::vector<TerrainProperty> &terrainProperties) {
   const auto mapHeight = noiseMap.size();
   const auto mapWidth = noiseMap.front().size();
 
@@ -83,9 +83,9 @@ std::vector<glm::vec3> generateColorMapTexture(const NoiseMap &noiseMap,
     for (size_t j = 0, j_size = mapWidth; j < j_size; ++j) {
       const float height = noiseMap[i][j];
       colorMapTextureData.push_back(glm::vec3(0.0f));
-      for (const auto &terrainType : terrainTypes) {
-        if (height <= terrainType.height) {
-          colorMapTextureData.back() = terrainType.color;
+      for (const auto &terrainProperty : terrainProperties) {
+        if (height <= terrainProperty.height) {
+          colorMapTextureData.back() = terrainProperty.color;
           break;
         }
       }

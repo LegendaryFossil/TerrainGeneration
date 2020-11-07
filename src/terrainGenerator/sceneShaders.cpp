@@ -63,6 +63,9 @@ SceneProgramObjects initSceneShaders(const WindowData &windowData, const SceneDa
              sceneData.lightData.specularData.intensity);
   setUniform(terrainGeneratorProgramObject, ufShineDamper, sceneData.lightData.specularData.shineDamper);
 
+  setUniform(terrainGeneratorProgramObject, ufWater,
+             sceneData.terrainData.terrainProperties[kWaterIndex].color);
+
   // Terrain noise/color/falloff map shader
   std::vector<GLuint> terrainGeneratorDebugShaderObjects;
   terrainGeneratorDebugShaderObjects.push_back(compileShader("terrain.vert", GL_VERTEX_SHADER));

@@ -3,6 +3,8 @@
 uniform mat3 normalMatrix;
 uniform mat4 modelToWorldMatrix;
 
+uniform vec3 water;
+
 uniform float specularLightIntensity;
 uniform float shineDamper;
 uniform vec3 specularLightReflection;
@@ -26,6 +28,7 @@ in vec4 clipSpacePosTE;
 out vec4 colorF;
 
 const float distortionStrength = 0.02;
+const float gamma = 2.2;
 
 //Function to retrieve heights
 float height(const float u, const float v) {
@@ -40,7 +43,7 @@ vec3 fresnel_schlick(const vec3 R_F0, const vec3 E, const vec3 N) {
 }
 
 vec3 getReflectionColor(const vec4 clipSpacePosition, const vec2 distortionTextureCoordinates, 
-				  const vec3 colorMapValue, const vec3 viewDirection, const vec3 waterNormal) {
+				  const vec3 colorMapValueGamma, const vec3 viewDirection, const vec3 waterNormal) {
 	const vec2 totalDistortion = (texture(dudvTexture, distortionTextureCoordinates).rg * 2.0 - 1.0) * distortionStrength;
 
 	vec2 projectiveTextureCoord = (clipSpacePosition.xy/clipSpacePosition.w) / 2.0 + 0.5;
@@ -48,8 +51,8 @@ vec3 getReflectionColor(const vec4 clipSpacePosition, const vec2 distortionTextu
 	projectiveTextureCoord.x = clamp(projectiveTextureCoord.x, 0.001, 0.999);
 	projectiveTextureCoord.y = clamp(projectiveTextureCoord.y, 0.001, 0.999);
 
-	const vec3 reflectionColor = texture(sceneTexture, vec2(projectiveTextureCoord.x, 1.0-projectiveTextureCoord.y)).rgb;
-	return mix(colorMapValue, reflectionColor, clamp(1.3 * fresnel_schlick(vec3(0.5), viewDirection, waterNormal), 0.0, 1.0));
+	const vec3 reflectionColor = pow(texture(sceneTexture, vec2(projectiveTextureCoord.x, 1.0-projectiveTextureCoord.y)).rgb, vec3(gamma));
+	return mix(colorMapValueGamma, reflectionColor, clamp(fresnel_schlick(vec3(0.04), viewDirection, waterNormal), 0.0, 1.0));
 }
 
 vec3 getSpecularReflection(const vec2 distortionTextureCoordinates, const vec3 viewDirection, 
@@ -73,10 +76,14 @@ void main() {
 	// Compute color
 	const vec3 lightDirection = normalize(viewLightPositionTE-viewPositionTE);
 	const vec3 viewDirection = normalize(-viewPositionTE);
+
+	// Compute output color based on camma correct color from the color map
 	const vec3 colorMapValue = texture(colorMapTexture, uvTE).rgb;
+	const vec3 colorMapValueGamma = pow(colorMapValue, vec3(gamma));
 
 	vec3 outputColor;
-	if(colorMapValue == vec3(0.0, 0.0, 1.0)) {
+	const float eps = 0.01;
+	if(all(lessThanEqual(abs(colorMapValue - water), vec3(eps)))) {
 		vec2 distortionTexCoord = texture(dudvTexture, vec2(uvTE.x + waterDistortionMoveFactor, uvTE.y)).rg * 0.1;
 		distortionTexCoord = uvTE + vec2(distortionTexCoord.x, distortionTexCoord.y + waterDistortionMoveFactor);
 
@@ -85,17 +92,19 @@ void main() {
 		const vec3 normalMapValue = texture(normalMapTexture, distortionTexCoord).rgb;
 		const vec3 waterNormal = normalize(vec3(normalMapValue.r * 2.0 - 1.0, normalMapValue.b * 3.0, normalMapValue.g * 2.0 - 1.0));
 
-		const vec3 reflectionColor = getReflectionColor(clipSpacePosTE, distortionTexCoord, colorMapValue, 
+		const vec3 reflectionColor = getReflectionColor(clipSpacePosTE, distortionTexCoord, colorMapValueGamma, 
 		viewDirection, waterNormal);
 		const vec3 specularReflection = getSpecularReflection(distortionTexCoord, viewDirection, lightDirection, waterNormal);
 		
 		outputColor = reflectionColor + specularReflection;
 	}
 	else {
-		const vec3 diffuseConstant = colorMapValue;
+		const vec3 diffuseConstant = colorMapValueGamma;
 		const vec3 diffuseReflection = diffuseConstant * clamp(dot(lightDirection, viewNormal), 0.0f, 1.0f);
-		outputColor =  ambientConstant + diffuseReflection;
+		outputColor = ambientConstant * colorMapValueGamma + diffuseReflection;
 	}
 
+	// Convert back to sRGB before outputting to framebuffer
+	outputColor.rgb = pow(outputColor.rgb, vec3(1.0/gamma));
 	colorF = vec4(outputColor, 1.0f);
 }

@@ -3,13 +3,14 @@
 #include "GL/glew.h"
 #include "glm/glm.hpp"
 #include "noiseMapGenerator.h"
-#include "terrainDefs.h"
 #include <unordered_map>
 #include <vector>
 
 constexpr auto MAX_TEXTURES = 10;
 
 struct LightData;
+struct TerrainData;
+struct TerrainProperty;
 
 struct Vertex {
   union {
@@ -44,5 +45,5 @@ using MeshIdToMesh = std::unordered_map<std::string, Mesh>;
 MeshIdToMesh initSceneMeshes(const TerrainData &terrainData, const LightData &lightData);
 
 void updateTerrainMeshTexture(Mesh *terrainMesh, const NoiseMapData &noiseMapData, const bool useFalloffMap,
-                              const std::vector<TerrainType> &terrainTypes);
+                              const std::vector<TerrainProperty> &terrainProperties);
 void updateTerrainMeshWaterTextures(Mesh *terrainMesh, const std::string mapIndex);

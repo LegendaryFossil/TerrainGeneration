@@ -8,7 +8,7 @@
 #include <vector>
 
 struct TerrainData;
-struct TerrainType;
+struct TerrainProperty;
 
 const std::string texturePath(getExePath() + "/resources/textures/");
 const std::string skyboxTexturePath(getExePath() + "/resources/textures/skybox/");
@@ -29,4 +29,4 @@ void updateTexture2D(GLuint *texHandle, const int offsetX, const int offsetY, co
 std::vector<glm::vec3> generateNoiseMapTexture(const NoiseMap &noiseMap);
 
 std::vector<glm::vec3> generateColorMapTexture(const NoiseMap &noiseMap,
-                                               const std::vector<TerrainType> &terrainTypes);
+                                               const std::vector<TerrainProperty> &terrainProperties);
