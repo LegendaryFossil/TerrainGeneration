@@ -7,6 +7,12 @@
 
 #include "GL\glew.h"
 
+struct ViewFrustumData {
+  float fieldOfView = 45.0f;
+  float nearPlane = 0.1f;
+  float farPlane = 10000.0f;
+};
+
 class Camera {
 public:
   Camera();
@@ -16,6 +22,7 @@ public:
 
   void yawRotation(GLfloat angle);
   void pitchRotation(GLfloat angle);
+  void invertPitch();
 
   void moveForward(GLfloat moveSpeed);
   void moveBackward(GLfloat moveSpeed);
@@ -24,15 +31,16 @@ public:
   void moveUp(GLfloat moveSpeed);
   void moveDown(GLfloat moveSpeed);
 
+  void setCameraPosition(const glm::vec3 &cameraPosition) { _cameraPositionCartesian = cameraPosition; }
+  glm::vec3 cameraPosition() const { return _cameraPositionCartesian; }
+
 private:
   glm::vec3 sphericalToCartesian(glm::vec3 sphericalCoordinate);
-
-private:
-  glm::vec3 _cameraPositionCartesian;
-
-  glm::vec3 _cameraTargetSpherical;
 
   glm::mat4 _viewMatrix;
   glm::mat4 _viewMatrixAxes;
   glm::mat4 _camPosTranslation;
+
+  glm::vec3 _cameraPositionCartesian;
+  glm::vec3 _cameraTargetSpherical;
 };

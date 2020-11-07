@@ -1,13 +1,16 @@
 #pragma once
 
-#include <vector>
-
 #include "GL/glew.h"
 #include "glm/glm.hpp"
-
 #include "noiseMapGenerator.h"
+#include <unordered_map>
+#include <vector>
 
 constexpr auto MAX_TEXTURES = 10;
+
+struct LightData;
+struct TerrainData;
+struct TerrainProperty;
 
 struct Vertex {
   union {
@@ -15,7 +18,7 @@ struct Vertex {
     glm::vec3 position3f;
     glm::vec4 position4f;
   };
-  
+
   glm::vec3 normal;
   glm::vec2 textureCoordinate;
 };
@@ -32,7 +35,15 @@ struct Mesh {
   GLuint textureHandles[MAX_TEXTURES];
 };
 
-Mesh generateMeshFromHeightMap(const NoiseMap &noiseMap);
+constexpr auto kSkyboxMeshId = "skybox";
+constexpr auto kTerrainMeshId = "terrain";
+constexpr auto kLightMeshId = "light";
+constexpr auto kWaterMeshId = "water";
 
-void createVertexBufferObject(GLuint *vboHandle, const std::vector<Vertex> &vertices);
-void createIndexBufferObject(GLuint *iboHandle, const std::vector<uint32_t> &indices);
+using MeshIdToMesh = std::unordered_map<std::string, Mesh>;
+
+MeshIdToMesh initSceneMeshes(const TerrainData &terrainData, const LightData &lightData);
+
+void updateTerrainMeshTexture(Mesh *terrainMesh, const NoiseMapData &noiseMapData, const bool useFalloffMap,
+                              const std::vector<TerrainProperty> &terrainProperties);
+void updateTerrainMeshWaterTextures(Mesh *terrainMesh, const std::string mapIndex);

@@ -3,15 +3,15 @@
 #include <cstdio>
 
 static constexpr auto nanoToMilliSeconds = 1000000.0f;
+static constexpr auto milli = 1000000.0f;
 
 void updateFrameTime(FrameTimeData* frameTimeData) {
   using namespace std::chrono;
 
-  time_point<high_resolution_clock, duration<double>> current = high_resolution_clock::now();
-  time_point<high_resolution_clock, duration<double>> epoch(current.time_since_epoch());
-
-  frameTimeData->frameTime = (epoch - frameTimeData->previous).count();
-  frameTimeData->previous = current;
+  const TimePoint newTime = high_resolution_clock::now();
+  frameTimeData->frameTimeInSec =
+      std::chrono::duration<double>(newTime - frameTimeData->currentTime).count();
+  frameTimeData->currentTime = newTime;
 }
 
 TimePoint startTimeMeasure() {

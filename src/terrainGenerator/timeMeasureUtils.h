@@ -6,8 +6,8 @@
 using TimePoint = std::chrono::time_point<std::chrono::high_resolution_clock, std::chrono::duration<double>>;
 
 struct FrameTimeData {
-  TimePoint previous;
-  double frameTime;
+  TimePoint currentTime = std::chrono::high_resolution_clock::now();
+  double frameTimeInSec;
 };
 
 void updateFrameTime(FrameTimeData* frameTimeData);

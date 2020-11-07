@@ -17,4 +17,4 @@ struct NoiseMapData {
 
 using NoiseMap = std::vector<std::vector<float>>;
 
-NoiseMap generateNoiseMap(const NoiseMapData &noiseMapData, const FalloffMap &falloffMap);
+NoiseMap generateNoiseMap(const NoiseMapData &noiseMapData, const bool useFalloffMap);

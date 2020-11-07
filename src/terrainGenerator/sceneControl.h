@@ -4,6 +4,7 @@
 
 class Camera;
 struct LightData;
+struct Mesh;
 
 struct ControlInputData {
   glm::dvec2 previousMousePosition;
@@ -11,5 +12,5 @@ struct ControlInputData {
 };
 
 void handleCameraInput(Camera *camera, const ControlInputData &controlInputData, const double frameTime);
-void handleLightInput(LightData *lightData, const ControlInputData &controlInputData, const double frameTime);
+void handleLightInput(Mesh* lightMesh, LightData *lightData, const ControlInputData &controlInputData, const double frameTime);
 

@@ -1,0 +1,3 @@
+add_subdirectory(skybox)
+add_subdirectory(waterDuDv)
+add_subdirectory(waterNormalMap)

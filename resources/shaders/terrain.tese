@@ -3,28 +3,24 @@
 layout(quads, fractional_even_spacing, cw) in;
 
 uniform sampler2D heightMapTexture;
-uniform float heightMultiplier;
 
+uniform float heightMultiplier;
 uniform float terrainGridPointSpacing;
 uniform float patchSize;
+
+uniform vec4 worldLightPosition;
+uniform vec4 horizontalClipPlane;
 
 uniform mat4 modelToWorldMatrix;
 uniform mat4 worldToViewMatrix;
 uniform mat4 viewToClipMatrix;
 
-uniform vec4 worldLight;
-
-// Vertex position and light seen from the camera
-out vec3 eyePosition;
-out vec3 eyeLight;
-
 in vec2 positionTC[];
 
-out vec2 uvTE;
-
-float getCurveValue(const float value) {
-  return (1.8234 * value * value - 0.3233f * value - 0.0258);
-}
+out vec2 uvTE; // Texture coordinates
+out vec3 viewPositionTE; // Vertex position as seen from camera
+out vec3 viewLightPositionTE; // Light as seen from the camera
+out vec4 clipSpacePosTE; // Clip space vertex
 
 void main(){
 	ivec2 textureSize = textureSize(heightMapTexture, 0);
@@ -35,16 +31,20 @@ void main(){
 	
 	// Compute vertex positions [0, 1] -> [0, textureSize * terrainGridPointSpacing]
 	// TerrainGridPointSpacing adds the scaling "effect"
-	vec4 res;
-	res.xz = uvTE.st * textureSize * terrainGridPointSpacing;
-	res.y = getCurveValue(texture(heightMapTexture, uvTE).r) * heightMultiplier;
-	res.w = 1.0;
+	vec4 vertex;
+	vertex.xz = uvTE.st * textureSize * terrainGridPointSpacing;
+	vertex.y = texture(heightMapTexture, uvTE).r * heightMultiplier * terrainGridPointSpacing;
+	vertex.w = 1.0;
 
-	vec4 viewPosition = worldToViewMatrix * modelToWorldMatrix * res;
+	vec4 worldPosition = modelToWorldMatrix * vertex;
+	gl_ClipDistance[1] = dot(worldPosition, horizontalClipPlane);
+
+	vec4 viewPosition = worldToViewMatrix * worldPosition;
 		
-	eyePosition = viewPosition.xyz;
-	eyeLight = (worldToViewMatrix*worldLight).xyz; // Move this to fragment shader?
+	viewPositionTE = viewPosition.xyz;
+	viewLightPositionTE = (worldToViewMatrix*worldLightPosition).xyz;
 
-	gl_Position = viewToClipMatrix * viewPosition;
+	clipSpacePosTE = viewToClipMatrix * viewPosition;
+	gl_Position = clipSpacePosTE;
 }
 

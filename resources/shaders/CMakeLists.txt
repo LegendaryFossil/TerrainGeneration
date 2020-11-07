@@ -1,4 +1,8 @@
 set(SHADERS
+	"light.vert"
+	"light.frag"
+	"skybox.vert"
+	"skybox.frag"
 	"terrain.vert"
 	"terrain.tesc"
 	"terrain.tese"
@@ -6,6 +10,8 @@ set(SHADERS
 	"terrainDebug.frag"
 	"terrainDebug.tesc"
 	"terrainDebug.tese"
+	"water.vert"
+	"water.frag"
 )
 
 install(FILES ${SHADERS} DESTINATION "${TERRAIN_GENERATOR_EXE_PATH}/resources/shaders")
