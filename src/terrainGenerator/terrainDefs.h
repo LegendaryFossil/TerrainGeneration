@@ -8,12 +8,11 @@
 constexpr auto PATCH_SIZE = 64.0f;
 
 constexpr auto kWaterIndex = 0;
-constexpr auto kShallowWaterIndex = 1;
-constexpr auto kSandIndex = 2;
-constexpr auto kGrassIndex = 3;
+constexpr auto kSandIndex = 1;
+constexpr auto kGrassIndex = 2;
 // constexpr auto kRockIndex = 4;
-constexpr auto kMountainIndex = 4;
-constexpr auto kSnowIndex = 5;
+constexpr auto kMountainIndex = 3;
+constexpr auto kSnowIndex = 4;
 
 struct TerrainProperty {
   std::string name;
@@ -53,7 +52,6 @@ inline TerrainData getDefaultTerrainData() {
 
   terrainData.terrainProperties.reserve(3);
   terrainData.terrainProperties.push_back({"Water", glm::vec3(0.0f, 0.0f, 1.0f), 0.0f});
-  terrainData.terrainProperties.push_back({"Shallow water", glm::vec3(0.42f, 0.61f, 0.94f), 0.020f});
   terrainData.terrainProperties.push_back({"Sand", glm::vec3(1.0f, 1.0f, 0.45f), 0.067f});
   terrainData.terrainProperties.push_back({"Grass", glm::vec3(0.0f, 1.0f, 0.0f), 0.392f});
   terrainData.terrainProperties.push_back({"Mountain", glm::vec3(0.43f, 0.227f, 0.03f), 0.686f});

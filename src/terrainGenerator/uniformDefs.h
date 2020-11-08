@@ -29,11 +29,16 @@ constexpr auto ufSpecularLightReflectionName = "specularLightReflection";
 constexpr auto ufSpecularLightIntensityName = "specularLightIntensity";
 constexpr auto ufShineDamper = "shineDamper";
 
+constexpr auto ufGrassTextureName = "grassTexture";
+constexpr auto ufSandTextureName = "sandTexture";
+
 constexpr auto ufWater = "water";
 constexpr auto ufSand = "sand";
 constexpr auto ufGrass = "grass";
 constexpr auto ufRock = "rock";
 constexpr auto ufMountain = "mountain";
 constexpr auto ufSnow = "snow";
+
+constexpr auto ufDebugScale = "debugScale";
 
 constexpr auto ufDebugSettings = "debugSettings";

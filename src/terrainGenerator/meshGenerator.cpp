@@ -93,7 +93,7 @@ static Mesh generateMeshFromHeightMap(const NoiseMapData &noiseMapData, const bo
 
   glBindVertexArray(0);
 
-  glGenTextures(4, terrainMesh.textureHandles);
+  glGenTextures(6, terrainMesh.textureHandles);
   createTexture2D(&terrainMesh.textureHandles[0], GL_CLAMP_TO_EDGE, GL_NEAREST, noiseMapData.width,
                   noiseMapData.height, GL_FLOAT, generateNoiseMapTexture(noiseMap).data());
   createTexture2D(&terrainMesh.textureHandles[1], GL_CLAMP_TO_EDGE, GL_NEAREST, noiseMapData.width,
@@ -105,7 +105,7 @@ static Mesh generateMeshFromHeightMap(const NoiseMapData &noiseMapData, const bo
   unsigned char *dudvPixelData = nullptr;
   loadTexture("waterDuDv1.png", waterDuDvTexturePath, &dudvWidth, &dudvHeight, &dudvPixelData);
   assert(dudvPixelData != nullptr);
-  createTexture2D(&terrainMesh.textureHandles[3], GL_REPEAT, GL_NEAREST, dudvWidth, dudvHeight,
+  createTexture2D(&terrainMesh.textureHandles[3], GL_REPEAT, GL_LINEAR, dudvWidth, dudvHeight,
                   GL_UNSIGNED_BYTE, dudvPixelData);
   freeTexture(dudvPixelData);
 
@@ -114,9 +114,25 @@ static Mesh generateMeshFromHeightMap(const NoiseMapData &noiseMapData, const bo
   loadTexture("waterNormalMap1.png", waterNormalMapTexturePath, &normalMapWidth, &normalMapHeight,
               &normalMapPixelData);
   assert(normalMapPixelData != nullptr);
-  createTexture2D(&terrainMesh.textureHandles[4], GL_REPEAT, GL_NEAREST, normalMapWidth, normalMapHeight,
+  createTexture2D(&terrainMesh.textureHandles[4], GL_REPEAT, GL_LINEAR, normalMapWidth, normalMapHeight,
                   GL_UNSIGNED_BYTE, normalMapPixelData);
   freeTexture(normalMapPixelData);
+
+  int grassWidth, grassHeight;
+  unsigned char *grassPixelData = nullptr;
+  loadTexture("grass.png", terrainTexturePath, &grassWidth, &grassHeight, &grassPixelData);
+  assert(grassPixelData != nullptr);
+  createTexture2D(&terrainMesh.textureHandles[5], GL_REPEAT, GL_NEAREST, grassWidth, grassHeight,
+                  GL_UNSIGNED_BYTE, grassPixelData);
+  freeTexture(grassPixelData);
+
+  int sandWidth, sandHeight;
+  unsigned char *sandPixelData = nullptr;
+  loadTexture("sand.png", terrainTexturePath, &sandWidth, &sandHeight, &sandPixelData);
+  assert(sandPixelData != nullptr);
+  createTexture2D(&terrainMesh.textureHandles[6], GL_REPEAT, GL_NEAREST, sandWidth, sandHeight,
+                  GL_UNSIGNED_BYTE, sandPixelData);
+  freeTexture(sandPixelData);
 
   return terrainMesh;
 }

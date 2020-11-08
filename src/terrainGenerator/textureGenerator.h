@@ -14,6 +14,7 @@ const std::string texturePath(getExePath() + "/resources/textures/");
 const std::string skyboxTexturePath(getExePath() + "/resources/textures/skybox/");
 const std::string waterDuDvTexturePath(getExePath() + "/resources/textures/waterDuDv/");
 const std::string waterNormalMapTexturePath(getExePath() + "/resources/textures/waterNormalMap/");
+const std::string terrainTexturePath(getExePath() + "/resources/textures/terrain/");
 
 void loadTexture(const std::string &textureName, const std::string &texturePath, int *width, int *height,
                  unsigned char **pixelData);

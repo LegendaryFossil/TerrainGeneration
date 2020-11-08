@@ -18,6 +18,7 @@ uniform mat4 viewToClipMatrix;
 in vec2 positionTC[];
 
 out vec2 uvTE; // Texture coordinates
+out vec3 worldPositionTE; // World vertex position
 out vec3 viewPositionTE; // Vertex position as seen from camera
 out vec3 viewLightPositionTE; // Light as seen from the camera
 out vec4 clipSpacePosTE; // Clip space vertex
@@ -37,6 +38,7 @@ void main(){
 	vertex.w = 1.0;
 
 	vec4 worldPosition = modelToWorldMatrix * vertex;
+	worldPositionTE = worldPosition.xyz;
 	gl_ClipDistance[1] = dot(worldPosition, horizontalClipPlane);
 
 	vec4 viewPosition = worldToViewMatrix * worldPosition;

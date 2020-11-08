@@ -63,8 +63,17 @@ SceneProgramObjects initSceneShaders(const WindowData &windowData, const SceneDa
              sceneData.lightData.specularData.intensity);
   setUniform(terrainGeneratorProgramObject, ufShineDamper, sceneData.lightData.specularData.shineDamper);
 
+  setUniform(terrainGeneratorProgramObject, ufGrassTextureName, 6);
+  setUniform(terrainGeneratorProgramObject, ufSandTextureName, 7);
+
   setUniform(terrainGeneratorProgramObject, ufWater,
              sceneData.terrainData.terrainProperties[kWaterIndex].color);
+  setUniform(terrainGeneratorProgramObject, ufGrass,
+             sceneData.terrainData.terrainProperties[kGrassIndex].color);
+  setUniform(terrainGeneratorProgramObject, ufSand,
+             sceneData.terrainData.terrainProperties[kSandIndex].color);
+
+  setUniform(terrainGeneratorProgramObject, ufDebugScale, sceneData.skyboxData.debugScale);
 
   // Terrain noise/color/falloff map shader
   std::vector<GLuint> terrainGeneratorDebugShaderObjects;

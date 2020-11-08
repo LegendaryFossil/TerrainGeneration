@@ -48,6 +48,11 @@ static void renderSceneImpl(const SceneData &sceneData, const unsigned int frame
   glActiveTexture(GL_TEXTURE1);
   glBindTexture(GL_TEXTURE_2D, terrainMesh.textureHandles[1]); // Color map
 
+  glActiveTexture(GL_TEXTURE6);
+  glBindTexture(GL_TEXTURE_2D, terrainMesh.textureHandles[5]); // Grass
+  glActiveTexture(GL_TEXTURE7);
+  glBindTexture(GL_TEXTURE_2D, terrainMesh.textureHandles[6]); // Sand
+
   setUniform(terrainGeneratorProgramObject, ufModelToWorldMatrixName, terrainMesh.modelTransformation);
   setUniform(terrainGeneratorProgramObject, ufWorldToViewMatrixName, viewMatrix);
   setUniform(terrainGeneratorProgramObject, ufNormalMatrix,
@@ -180,6 +185,12 @@ void renderTerrain(const WindowData &windowData, const SceneData &sceneData, con
   setUniform(terrainGeneratorProgramObject, ufShineDamper, sceneData.lightData.specularData.shineDamper);
   setUniform(terrainGeneratorProgramObject, ufWater,
              sceneData.terrainData.terrainProperties[kWaterIndex].color);
+  setUniform(terrainGeneratorProgramObject, ufGrass,
+             sceneData.terrainData.terrainProperties[kGrassIndex].color);
+  setUniform(terrainGeneratorProgramObject, ufSand,
+             sceneData.terrainData.terrainProperties[kSandIndex].color);
+
+  setUniform(terrainGeneratorProgramObject, ufDebugScale, sceneData.skyboxData.debugScale);
 
   renderSceneImpl(sceneData, windowData.width, windowData.height, viewMatrix, viewToClipMatrix, isWireFrame,
                   sceneProgramObjects);

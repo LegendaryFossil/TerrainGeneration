@@ -115,7 +115,11 @@ void handleUIInput(SceneSettings *sceneSettings, TerrainData *terrainData, Light
   if (ImGui::SliderFloat("Terrain grid spacing", &terrainData->gridPointSpacing, 1.0f, 10.0f)) {
     // Do nothing, just update the variable
   }
-  if (ImGui::SliderFloat("Height multiplier", &terrainData->heightMultiplier, 0.0f, 100.0f)) {
+  if (ImGui::SliderFloat("Height multiplier", &terrainData->heightMultiplier, 0.0f, 1000.0f)) {
+    // Do nothing, just update the variable
+  }
+
+  if (ImGui::SliderFloat("Debug scale", &skyboxData->debugScale, 0.001f, 0.2f)) {
     // Do nothing, just update the variable
   }
 
