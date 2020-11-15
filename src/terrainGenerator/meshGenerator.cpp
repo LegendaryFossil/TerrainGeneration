@@ -6,6 +6,13 @@
 #include "textureGenerator.h"
 #include <assert.h>
 
+static void validateTerrainMeshTextureData(const unsigned char *pixelData, const int width, const int height,
+                                           const int expectedWidth, const int expectedHeight) {
+  assert(pixelData != nullptr);
+  assert(width == expectedWidth);
+  assert(height == expectedHeight);
+}
+
 static void createVertexBufferObject(GLuint *vboHandle, const std::vector<Vertex> &vertices) {
   glBindBuffer(GL_ARRAY_BUFFER, *vboHandle);
   glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * vertices.size(), vertices.data(), GL_STATIC_DRAW);
@@ -42,8 +49,8 @@ static Mesh generateMeshHeightMapVertices(const int mapWidth, const int mapHeigh
   Mesh heightMapMesh = {};
 
   // Assume height map texture is a multiple of 64 (so minimum is that it contains one patch)
-  int numOfPatchesX = mapWidth / int(PATCH_SIZE);
-  int numOfPatchesZ = mapHeight / int(PATCH_SIZE);
+  int numOfPatchesX = mapWidth / int(kPatchSize);
+  int numOfPatchesZ = mapHeight / int(kPatchSize);
 
   int numOfPatches = numOfPatchesX * numOfPatchesZ;
   heightMapMesh.vertices.reserve(numOfPatches);
@@ -52,7 +59,7 @@ static Mesh generateMeshHeightMapVertices(const int mapWidth, const int mapHeigh
   for (size_t i = 0; i < numOfPatchesZ; ++i) {
     for (size_t j = 0; j < numOfPatchesX; ++j) {
       Vertex vertex = {};
-      vertex.position2f = glm::vec2((j * PATCH_SIZE) * 1.0f / mapWidth, (i * PATCH_SIZE) * 1.0f / mapHeight);
+      vertex.position2f = glm::vec2((j * kPatchSize) * 1.0f / mapWidth, (i * kPatchSize) * 1.0f / mapHeight);
       heightMapMesh.vertices.push_back(vertex);
     }
   }
@@ -68,7 +75,8 @@ static Mesh generateMeshHeightMapVertices(const int mapWidth, const int mapHeigh
 }
 
 static Mesh generateMeshFromHeightMap(const NoiseMapData &noiseMapData, const bool useFalloffMap,
-                                      const std::vector<TerrainProperty> &terrainProperties) {
+                                      const std::vector<glm::vec3> &colors,
+                                      const std::vector<float> &heights) {
   const auto noiseMap = generateNoiseMap(noiseMapData, useFalloffMap);
 
   Mesh terrainMesh = generateMeshHeightMapVertices(noiseMapData.width, noiseMapData.height, noiseMap);
@@ -97,7 +105,7 @@ static Mesh generateMeshFromHeightMap(const NoiseMapData &noiseMapData, const bo
   createTexture2D(&terrainMesh.textureHandles[0], GL_CLAMP_TO_EDGE, GL_NEAREST, noiseMapData.width,
                   noiseMapData.height, GL_FLOAT, generateNoiseMapTexture(noiseMap).data());
   createTexture2D(&terrainMesh.textureHandles[1], GL_CLAMP_TO_EDGE, GL_NEAREST, noiseMapData.width,
-                  noiseMapData.height, GL_FLOAT, generateColorMapTexture(noiseMap, terrainProperties).data());
+                  noiseMapData.height, GL_FLOAT, generateColorMapTexture(noiseMap, colors, heights).data());
   createTexture2D(&terrainMesh.textureHandles[2], GL_CLAMP_TO_EDGE, GL_NEAREST, noiseMapData.width,
                   noiseMapData.height, GL_FLOAT, generateFalloffMap(noiseMapData.width).data());
 
@@ -118,21 +126,32 @@ static Mesh generateMeshFromHeightMap(const NoiseMapData &noiseMapData, const bo
                   GL_UNSIGNED_BYTE, normalMapPixelData);
   freeTexture(normalMapPixelData);
 
-  int grassWidth, grassHeight;
-  unsigned char *grassPixelData = nullptr;
-  loadTexture("grass.png", terrainTexturePath, &grassWidth, &grassHeight, &grassPixelData);
-  assert(grassPixelData != nullptr);
-  createTexture2D(&terrainMesh.textureHandles[5], GL_REPEAT, GL_NEAREST, grassWidth, grassHeight,
-                  GL_UNSIGNED_BYTE, grassPixelData);
-  freeTexture(grassPixelData);
+  std::vector<unsigned char *> terrainTexturesPixelData;
 
-  int sandWidth, sandHeight;
-  unsigned char *sandPixelData = nullptr;
-  loadTexture("sand.png", terrainTexturePath, &sandWidth, &sandHeight, &sandPixelData);
-  assert(sandPixelData != nullptr);
-  createTexture2D(&terrainMesh.textureHandles[6], GL_REPEAT, GL_NEAREST, sandWidth, sandHeight,
-                  GL_UNSIGNED_BYTE, sandPixelData);
-  freeTexture(sandPixelData);
+  const auto expectedTerrainTextureDimension = 1024; // Ensure it is 1024x1024 textures
+  int terrainTextureWidth, terrainTextureHeight;
+  unsigned char *terrainTexturePixelData = nullptr;
+
+  loadTexture("sand.png", terrainTexturePath, &terrainTextureWidth, &terrainTextureHeight,
+              &terrainTexturePixelData);
+  validateTerrainMeshTextureData(terrainTexturePixelData, terrainTextureWidth, terrainTextureHeight,
+                                 expectedTerrainTextureDimension, expectedTerrainTextureDimension);
+  terrainTexturesPixelData.push_back(terrainTexturePixelData);
+
+  loadTexture("grass.png", terrainTexturePath, &terrainTextureWidth, &terrainTextureHeight,
+              &terrainTexturePixelData);
+  validateTerrainMeshTextureData(terrainTexturePixelData, terrainTextureWidth, terrainTextureHeight,
+                                 expectedTerrainTextureDimension, expectedTerrainTextureDimension);
+  terrainTexturesPixelData.push_back(terrainTexturePixelData);
+
+  createTexture2DArray(&terrainMesh.textureHandles[5], GL_REPEAT, GL_NEAREST, terrainTextureWidth,
+                       terrainTextureHeight, GL_UNSIGNED_BYTE, terrainTexturesPixelData);
+
+  for (auto pixelData : terrainTexturesPixelData) {
+    freeTexture(pixelData);
+  }
+
+  terrainTexturesPixelData.clear();
 
   return terrainMesh;
 }
@@ -321,23 +340,23 @@ static Mesh generateLightMesh(const LightData &lightData) {
 static Mesh generateWaterMesh(const int mapWidth, const int mapHeight) {
   Mesh waterMesh{};
   // Assume height map texture is a multiple of 64 (so minimum is that it contains one patch)
-  int numOfPatchesX = mapWidth / int(PATCH_SIZE);
-  int numOfPatchesZ = mapHeight / int(PATCH_SIZE);
+  int numOfPatchesX = mapWidth / int(kPatchSize);
+  int numOfPatchesZ = mapHeight / int(kPatchSize);
 
   Vertex v1 = {};
   v1.position3f = glm::vec3(0.0f, 0.0f, 0.0f);
   v1.textureCoordinate = glm::vec2(0.0f, 0.0f);
 
   Vertex v2 = {};
-  v2.position3f = glm::vec3(0.0f, 0.0f, numOfPatchesZ * PATCH_SIZE);
+  v2.position3f = glm::vec3(0.0f, 0.0f, numOfPatchesZ * kPatchSize);
   v2.textureCoordinate = glm::vec2(1.0f, 0.0f);
 
   Vertex v3 = {};
-  v3.position3f = glm::vec3(numOfPatchesX * PATCH_SIZE, 0.0f, 0.0f);
+  v3.position3f = glm::vec3(numOfPatchesX * kPatchSize, 0.0f, 0.0f);
   v2.textureCoordinate = glm::vec2(0.0f, 1.0f);
 
   Vertex v4 = {};
-  v4.position3f = glm::vec3(numOfPatchesX * PATCH_SIZE, 0.0f, numOfPatchesZ * PATCH_SIZE);
+  v4.position3f = glm::vec3(numOfPatchesX * kPatchSize, 0.0f, numOfPatchesZ * kPatchSize);
   v4.textureCoordinate = glm::vec2(1.0f, 1.0f);
 
   waterMesh.vertices.push_back(v1);
@@ -387,7 +406,8 @@ MeshIdToMesh initSceneMeshes(const TerrainData &terrainData, const LightData &li
 
   meshIdToMesh.emplace(kTerrainMeshId,
                        generateMeshFromHeightMap(terrainData.noiseMapData, terrainData.useFalloffMap,
-                                                 terrainData.terrainProperties));
+                                                 terrainData.terrainProperties.colors,
+                                                 terrainData.terrainProperties.heights));
 
   meshIdToMesh.emplace(kLightMeshId, generateLightMesh(lightData));
 
@@ -398,12 +418,12 @@ MeshIdToMesh initSceneMeshes(const TerrainData &terrainData, const LightData &li
 }
 
 void updateTerrainMeshTexture(Mesh *terrainMesh, const NoiseMapData &noiseMapData, const bool useFalloffMap,
-                              const std::vector<TerrainProperty> &terrainProperties) {
+                              const std::vector<glm::vec3> &colors, const std::vector<float> &heights) {
   const auto noiseMap = generateNoiseMap(noiseMapData, useFalloffMap);
   updateTexture2D(&terrainMesh->textureHandles[0], 0, 0, noiseMapData.width, noiseMapData.height, GL_FLOAT,
                   generateNoiseMapTexture(noiseMap).data());
   updateTexture2D(&terrainMesh->textureHandles[1], 0, 0, noiseMapData.width, noiseMapData.height, GL_FLOAT,
-                  generateColorMapTexture(noiseMap, terrainProperties).data());
+                  generateColorMapTexture(noiseMap, colors, heights).data());
 }
 
 void updateTerrainMeshWaterTextures(Mesh *terrainMesh, const std::string mapIndex) {

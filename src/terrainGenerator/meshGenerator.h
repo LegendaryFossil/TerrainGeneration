@@ -45,5 +45,5 @@ using MeshIdToMesh = std::unordered_map<std::string, Mesh>;
 MeshIdToMesh initSceneMeshes(const TerrainData &terrainData, const LightData &lightData);
 
 void updateTerrainMeshTexture(Mesh *terrainMesh, const NoiseMapData &noiseMapData, const bool useFalloffMap,
-                              const std::vector<TerrainProperty> &terrainProperties);
+                              const std::vector<glm::vec3> &colors, const std::vector<float> &heights);
 void updateTerrainMeshWaterTextures(Mesh *terrainMesh, const std::string mapIndex);

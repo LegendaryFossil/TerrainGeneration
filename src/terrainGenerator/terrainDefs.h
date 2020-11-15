@@ -5,25 +5,22 @@
 #include "noiseMapGenerator.h"
 #include <string>
 
-constexpr auto PATCH_SIZE = 64.0f;
-
-constexpr auto kWaterIndex = 0;
-constexpr auto kSandIndex = 1;
-constexpr auto kGrassIndex = 2;
-// constexpr auto kRockIndex = 4;
-constexpr auto kMountainIndex = 3;
-constexpr auto kSnowIndex = 4;
-
-struct TerrainProperty {
-  std::string name;
-  glm::vec3 color;
-  float height;
-};
+constexpr auto kPatchSize = 64.0f;
+constexpr auto kTerrainCount = 5;
 
 // Terrain
 struct TerrainData {
   NoiseMapData noiseMapData = {}; // Noise map settings to alter terrain
-  std::vector<TerrainProperty> terrainProperties;
+
+  struct {
+    std::vector<std::string> names;
+    std::vector<glm::vec3> colors;
+    std::vector<float> colorStrengths;
+    std::vector<float> heights;
+    std::vector<float> blends;
+    std::vector<float> textureScalings;
+  } terrainProperties;
+
   float gridPointSpacing = 1.0f; // Terrain scaling
   float heightMultiplier = 65.0f;
 
@@ -50,12 +47,47 @@ inline TerrainData getDefaultTerrainData() {
   terrainData.noiseMapData.seed = 1;
   terrainData.noiseMapData.octaveOffset = glm::vec2(0.0f, 444.0f);
 
-  terrainData.terrainProperties.reserve(3);
-  terrainData.terrainProperties.push_back({"Water", glm::vec3(0.0f, 0.0f, 1.0f), 0.0f});
-  terrainData.terrainProperties.push_back({"Sand", glm::vec3(1.0f, 1.0f, 0.45f), 0.067f});
-  terrainData.terrainProperties.push_back({"Grass", glm::vec3(0.0f, 1.0f, 0.0f), 0.392f});
-  terrainData.terrainProperties.push_back({"Mountain", glm::vec3(0.43f, 0.227f, 0.03f), 0.686f});
-  terrainData.terrainProperties.push_back({"Snow", glm::vec3(1.0f, 1.0f, 1.0f), 1.0f});
+  terrainData.terrainProperties.names.push_back("Water");
+  terrainData.terrainProperties.colors.push_back(glm::vec3(0.0f, 0.0f, 1.0f));
+  terrainData.terrainProperties.colorStrengths.push_back(0.5f);
+  terrainData.terrainProperties.heights.push_back(0.0f);
+  terrainData.terrainProperties.blends.push_back(0.0f);
+  terrainData.terrainProperties.textureScalings.push_back(50.0f);
+
+  terrainData.terrainProperties.names.push_back("Sand");
+  terrainData.terrainProperties.colors.push_back(glm::vec3(1.0f, 1.0f, 0.45f));
+  terrainData.terrainProperties.heights.push_back(0.005f);
+  terrainData.terrainProperties.colorStrengths.push_back(0.5f);
+  terrainData.terrainProperties.blends.push_back(0.0f);
+  terrainData.terrainProperties.textureScalings.push_back(50.0f);
+
+  terrainData.terrainProperties.names.push_back("Grass");
+  terrainData.terrainProperties.colors.push_back(glm::vec3(0.0f, 1.0f, 0.0f));
+  terrainData.terrainProperties.heights.push_back(0.021f);
+  terrainData.terrainProperties.colorStrengths.push_back(0.5f);
+  terrainData.terrainProperties.blends.push_back(0.0f);
+  terrainData.terrainProperties.textureScalings.push_back(50.0f);
+
+  terrainData.terrainProperties.names.push_back("Mountain");
+  terrainData.terrainProperties.colors.push_back(glm::vec3(0.43f, 0.227f, 0.03f));
+  terrainData.terrainProperties.heights.push_back(0.289f);
+  terrainData.terrainProperties.colorStrengths.push_back(0.5f);
+  terrainData.terrainProperties.blends.push_back(0.0f);
+  terrainData.terrainProperties.textureScalings.push_back(50.0f);
+
+  terrainData.terrainProperties.names.push_back("Snow");
+  terrainData.terrainProperties.colors.push_back(glm::vec3(1.0f, 1.0f, 1.0f));
+  terrainData.terrainProperties.heights.push_back(0.763f);
+  terrainData.terrainProperties.colorStrengths.push_back(0.5f);
+  terrainData.terrainProperties.blends.push_back(0.0f);
+  terrainData.terrainProperties.textureScalings.push_back(50.0f);
+
+  assert(terrainData.terrainProperties.names.size() == kTerrainCount);
+  assert(terrainData.terrainProperties.colors.size() == kTerrainCount);
+  assert(terrainData.terrainProperties.colorStrengths.size() == kTerrainCount);
+  assert(terrainData.terrainProperties.heights.size() == kTerrainCount);
+  assert(terrainData.terrainProperties.blends.size() == kTerrainCount);
+  assert(terrainData.terrainProperties.textureScalings.size() == kTerrainCount);
 
   return terrainData;
 }

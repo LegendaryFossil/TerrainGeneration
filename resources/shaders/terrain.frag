@@ -5,9 +5,21 @@ uniform float debugScale;
 uniform mat3 normalMatrix;
 uniform mat4 modelToWorldMatrix;
 
-uniform vec3 water;
-uniform vec3 grass;
-uniform vec3 sand;
+/*
+[0] = Water
+[1] = Sand
+[2] = Grass
+[3] = Rocks
+[4] = Mountain
+[5] = Snow
+*/
+uniform int terrainCount;
+uniform vec3 terrainColors[5];
+uniform float terrainColorStrengths[5];
+uniform float terrainHeights[5];
+uniform float terrainBlends[5];
+uniform float terrainTextureScalings[5];
+
 
 uniform float specularLightIntensity;
 uniform float shineDamper;
@@ -20,8 +32,7 @@ uniform sampler2D sceneTexture;
 uniform sampler2D dudvTexture;
 uniform sampler2D normalMapTexture;
 
-uniform sampler2D grassTexture;
-uniform sampler2D sandTexture;
+uniform sampler2DArray terrainTextures;
 
 uniform float terrainGridPointSpacing;
 uniform float heightMultiplier;
@@ -36,7 +47,14 @@ in vec4 clipSpacePosTE;
 out vec4 colorF;
 
 const float distortionStrength = 0.02;
-const float gamma = 2.2;
+
+// Gamma correction
+const vec3 gamma = vec3(2.2);
+
+// When generating the noise map the min height is always clamped to 0.0
+// and max height is 1.0 * heightMultiplier * terrainGridPointSpacing
+const float minHeight = 0.0;
+const float maxHeight = 1.0 * heightMultiplier * terrainGridPointSpacing;
 
 float height(const float u, const float v) {
 	return (texture(heightMapTexture, vec2(u, v)).r * heightMultiplier);
@@ -72,7 +90,7 @@ vec3 getReflectionColor(const vec4 clipSpacePosition, const vec2 distortionTextu
 	projectiveTextureCoord.x = clamp(projectiveTextureCoord.x, 0.001, 0.999);
 	projectiveTextureCoord.y = clamp(projectiveTextureCoord.y, 0.001, 0.999);
 
-	const vec3 reflectionColor = pow(texture(sceneTexture, vec2(projectiveTextureCoord.x, 1.0-projectiveTextureCoord.y)).rgb, vec3(gamma));
+	const vec3 reflectionColor = pow(texture(sceneTexture, vec2(projectiveTextureCoord.x, 1.0-projectiveTextureCoord.y)).rgb, gamma);
 	return mix(colorMapValueGamma, reflectionColor, clamp(fresnel_schlick(vec3(0.04), viewDirection, waterNormal), 0.0, 1.0));
 }
 
@@ -88,21 +106,26 @@ bool isTerrainType(const vec3 colorMapValue, const vec3 terrainType) {
 }
 
 vec3 getTerrainTextureColor(const vec3 colorMapValue, const vec3 worldPosition, const vec3 textureWeights) {
-	vec3 xAxis = vec3(0.0);
-	vec3 yAxis = vec3(0.0);
-	vec3 zAxis = vec3(0.0);
+	const float eps = 0.0001;
 
-	if(isTerrainType(colorMapValue, grass)) {
-		xAxis = pow(texture2D(grassTexture, worldPositionTE.yz * debugScale).rgb, vec3(gamma));
-		yAxis = pow(texture2D(grassTexture, worldPositionTE.xz * debugScale).rgb, vec3(gamma));
-		zAxis = pow(texture2D(grassTexture, worldPositionTE.xy * debugScale).rgb, vec3(gamma));
-	} else if (isTerrainType(colorMapValue, sand)) {
-		xAxis = pow(texture2D(sandTexture, worldPositionTE.yz * debugScale).rgb, vec3(gamma));
-		yAxis = pow(texture2D(sandTexture, worldPositionTE.xz * debugScale).rgb, vec3(gamma));
-		zAxis = pow(texture2D(sandTexture, worldPositionTE.xy * debugScale).rgb, vec3(gamma));
+	float heightPercent = smoothstep(minHeight, maxHeight, worldPosition.y);
+	vec3 color = vec3(0.0);
+	for(int i = 1; i < 3; ++i) {
+		float drawStrength = smoothstep(-terrainBlends[i]/2.0 - eps, terrainBlends[i]/2.0, heightPercent - terrainHeights[i]);
+		
+		vec3 tintColor = terrainColors[i] * terrainColorStrengths[i];
+
+		const vec3 scaledWorldPos = worldPosition / terrainTextureScalings[i];
+		vec3 xProjection = texture(terrainTextures, vec3(scaledWorldPos.yz, i-1)).rgb;
+		vec3 yProjection = texture(terrainTextures, vec3(scaledWorldPos.xz, i-1)).rgb;
+		vec3 zProjection = texture(terrainTextures, vec3(scaledWorldPos.xy, i-1)).rgb;
+		vec3 textureColor = textureWeights.x * xProjection + textureWeights.y * yProjection + textureWeights.z * zProjection;
+		textureColor *= (1.0-terrainColorStrengths[i]);
+
+		color = color * (1.0 - drawStrength) + (tintColor + textureColor) * drawStrength;
 	}
 
-	return textureWeights.x * xAxis + textureWeights.y * yAxis + textureWeights.z * zAxis;
+	return pow(color, gamma);
 }
 
 void main() {
@@ -117,18 +140,15 @@ void main() {
 
 	const vec3 modelNormal = normalize(cross(deltaZ, deltaX));
 	const vec3 viewNormal = normalMatrix * modelNormal;
-
-	// Compute color
 	const vec3 lightDirection = normalize(viewLightPositionTE-viewPositionTE);
 	const vec3 viewDirection = normalize(-viewPositionTE);
 
 	// Compute output color based on camma correct color from the color map
 	const vec3 colorMapValue = texture(colorMapTexture, uvTE).rgb;
-	const vec3 colorMapValueGamma = pow(colorMapValue, vec3(gamma));
 
 	vec3 outputColor;
 	const float eps = 0.01;
-	if(all(lessThanEqual(abs(colorMapValue - water), vec3(eps)))) {
+	if(isTerrainType(colorMapValue, terrainColors[0])) {
 		vec2 distortionTexCoord = texture(dudvTexture, vec2(uvTE.x + waterDistortionMoveFactor, uvTE.y)).rg * 0.1;
 		distortionTexCoord = uvTE + vec2(distortionTexCoord.x, distortionTexCoord.y + waterDistortionMoveFactor);
 
@@ -137,7 +157,7 @@ void main() {
 		const vec3 normalMapValue = texture(normalMapTexture, distortionTexCoord).rgb;
 		const vec3 waterNormal = normalize(vec3(normalMapValue.r * 2.0 - 1.0, normalMapValue.b * 3.0, normalMapValue.g * 2.0 - 1.0));
 
-		const vec3 reflectionColor = getReflectionColor(clipSpacePosTE, distortionTexCoord, colorMapValueGamma, 
+		const vec3 reflectionColor = getReflectionColor(clipSpacePosTE, distortionTexCoord, pow(colorMapValue, gamma), 
 		viewDirection, waterNormal);
 		const vec3 specularReflection = getSpecularReflection(distortionTexCoord, viewDirection, lightDirection, waterNormal);
 		
@@ -151,7 +171,5 @@ void main() {
 
 	// Convert back to sRGB before outputting to framebuffer
 	outputColor.rgb = pow(outputColor.rgb, vec3(1.0/gamma));
-	//float test = smoothstep(0.0, heightMultiplier, worldPositionTE.y);
-	//colorF = vec4(test, test, test, 1.0);
-	//colorF = vec4(outputColor, 1.0f);
+	colorF = vec4(outputColor, 1.0f);
 }

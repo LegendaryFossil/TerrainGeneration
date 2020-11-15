@@ -15,7 +15,6 @@ struct SceneData {
   struct SkyBoxData {
     float skyboxRotation = 0.0f;
     float skyboxRotationSpeed = 1.5f;
-    float debugScale = 0.040f;
   } skyboxData;
 
 

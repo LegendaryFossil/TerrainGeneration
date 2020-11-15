@@ -1,6 +1,7 @@
 #include "textureGenerator.h"
 
 #include "GL/glew.h"
+#include "glm\gtc\type_ptr.hpp"
 #include "stb_image.h"
 #include "terrainDefs.h"
 
@@ -25,6 +26,24 @@ void createTexture2D(GLuint *texHandle, GLenum wrapMode, GLenum filterMode, cons
   glBindTexture(GL_TEXTURE_2D, 0);
 }
 
+void createTexture2DArray(GLuint *texHandle, GLenum wrapMode, GLenum filterMode, const int width,
+                          const int height, GLenum dataType,
+                          const std::vector<unsigned char *> &terrainTextures) {
+  glBindTexture(GL_TEXTURE_2D_ARRAY, *texHandle);
+
+  glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGB8, width, height, GLsizei(terrainTextures.size()));
+  for (size_t i = 0; i < terrainTextures.size(); ++i) {
+    glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, GLint(i), width, height, 1, GL_RGB, dataType, terrainTextures[i]);
+  }
+
+  glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, wrapMode);
+  glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, wrapMode);
+  glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, filterMode);
+  glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, filterMode);
+
+  glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+}
+
 void createCubeMapTexture(GLuint *texHandle, const std::vector<std::string> &facesNames) {
   glBindTexture(GL_TEXTURE_CUBE_MAP, *texHandle);
 
@@ -45,7 +64,7 @@ void createCubeMapTexture(GLuint *texHandle, const std::vector<std::string> &fac
   glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
-  glBindTexture(GL_TEXTURE_2D, 0);
+  glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 }
 
 void updateTexture2D(GLuint *texHandle, const int offsetX, const int offsetY, const int width,
@@ -72,8 +91,8 @@ std::vector<glm::vec3> generateNoiseMapTexture(const NoiseMap &noiseMap) {
   return noiseMapTextureData;
 }
 
-std::vector<glm::vec3> generateColorMapTexture(const NoiseMap &noiseMap,
-                                               const std::vector<TerrainProperty> &terrainProperties) {
+std::vector<glm::vec3> generateColorMapTexture(const NoiseMap &noiseMap, const std::vector<glm::vec3> &colors,
+                                               const std::vector<float> &heights) {
   const auto mapHeight = noiseMap.size();
   const auto mapWidth = noiseMap.front().size();
 
@@ -83,9 +102,9 @@ std::vector<glm::vec3> generateColorMapTexture(const NoiseMap &noiseMap,
     for (size_t j = 0, j_size = mapWidth; j < j_size; ++j) {
       const float height = noiseMap[i][j];
       colorMapTextureData.push_back(glm::vec3(0.0f));
-      for (const auto &terrainProperty : terrainProperties) {
-        if (height <= terrainProperty.height) {
-          colorMapTextureData.back() = terrainProperty.color;
+      for (size_t i = 0; i < colors.size(); ++i) {
+        if (height <= heights[i]) {
+          colorMapTextureData.back() = colors[i];
           break;
         }
       }

@@ -3,12 +3,11 @@
 #include "glm\glm.hpp"
 #include "glm\gtc\matrix_transform.hpp"
 #include "glm\gtc\type_ptr.hpp"
+#include "utils.h"
 #include <cassert>
 #include <fstream>
 #include <iostream>
 #include <iterator>
-
-#include "utils.h"
 
 namespace {
 
@@ -49,22 +48,6 @@ void validateShaderCompileStatus(const std::string &shaderFileName, const GLuint
 
     fprintf(stderr, "Compile failure in %s (%s) shader:\n%s\n", shaderFileName.c_str(), strShaderType,
             logInfo);
-    delete[] logInfo;
-    assert(false);
-  }
-}
-
-void validateProgramObject(const GLuint programObject) {
-  glValidateProgram(programObject);
-  GLint status;
-  glGetProgramiv(programObject, GL_VALIDATE_STATUS, &status);
-  if (status == GL_FALSE) {
-    GLint infoLogLength;
-    glGetProgramiv(programObject, GL_INFO_LOG_LENGTH, &infoLogLength);
-    GLchar *logInfo = new char[infoLogLength + 1];
-    glGetProgramInfoLog(programObject, infoLogLength, NULL, logInfo);
-
-    fprintf(stderr, "Program object creation error: %s\n", logInfo);
     delete[] logInfo;
     assert(false);
   }
@@ -116,9 +99,23 @@ GLuint createProgramObject(const std::vector<GLuint> &shaderObjects) {
     glDetachShader(programObject, shaderObject);
   }
 
-  validateProgramObject(programObject);
-
   return programObject;
+}
+
+void validateProgramObject(const GLuint programObject) {
+  glValidateProgram(programObject);
+  GLint status;
+  glGetProgramiv(programObject, GL_VALIDATE_STATUS, &status);
+  if (status == GL_FALSE) {
+    GLint infoLogLength;
+    glGetProgramiv(programObject, GL_INFO_LOG_LENGTH, &infoLogLength);
+    GLchar *logInfo = new char[infoLogLength + 1];
+    glGetProgramInfoLog(programObject, infoLogLength, NULL, logInfo);
+
+    fprintf(stderr, "Program object creation error: %s\n", logInfo);
+    delete[] logInfo;
+    assert(false);
+  }
 }
 
 void deleteProgramObject(const GLuint programObject) { glDeleteProgram(programObject); }
@@ -157,6 +154,19 @@ void setUniform(const GLuint programObject, const std::string &uniformName, cons
 void setUniform(const GLuint programObject, const std::string &uniformName, const glm::vec4 &uniformValue) {
   glProgramUniform4fv(programObject, glGetUniformLocation(programObject, uniformName.c_str()), 1,
                       glm::value_ptr(uniformValue));
+}
+
+// Float arrays
+void setUniform(const GLuint programObject, const std::string &uniformName,
+                const std::vector<float> &uniformValues) {
+  glProgramUniform1fv(programObject, glGetUniformLocation(programObject, uniformName.c_str()),
+                      uniformValues.size(), uniformValues.data());
+}
+
+void setUniform(const GLuint programObject, const std::string &uniformName,
+                const std::vector<glm::vec3> &uniformValues) {
+  glProgramUniform3fv(programObject, glGetUniformLocation(programObject, uniformName.c_str()),
+                      uniformValues.size(), glm::value_ptr(uniformValues[0]));
 }
 
 // Matrices

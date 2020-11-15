@@ -39,6 +39,14 @@ constexpr auto ufRock = "rock";
 constexpr auto ufMountain = "mountain";
 constexpr auto ufSnow = "snow";
 
+constexpr auto ufTerrainCount = "terrainCount";
+constexpr auto ufTerrainColors = "terrainColors";
+constexpr auto ufTerrainColorStrengths = "terrainColorStrengths";
+constexpr auto ufTerrainHeights = "terrainHeights";
+constexpr auto ufTerrainBlends = "terrainBlends";
+constexpr auto ufTerrainTextures = "terrainTextures";
+constexpr auto ufTerrainTextureScalings = "terrainTextureScalings";
+
 constexpr auto ufDebugScale = "debugScale";
 
 constexpr auto ufDebugSettings = "debugSettings";

@@ -48,7 +48,7 @@ SceneProgramObjects initSceneShaders(const WindowData &windowData, const SceneDa
   setUniform(terrainGeneratorProgramObject, ufSceneTextureName, 3);
   setUniform(terrainGeneratorProgramObject, ufDuDvTextureName, 4);
   setUniform(terrainGeneratorProgramObject, ufNormalMapTextureName, 5);
-  setUniform(terrainGeneratorProgramObject, ufPatchSizeName, PATCH_SIZE);
+  setUniform(terrainGeneratorProgramObject, ufPatchSizeName, kPatchSize);
   setUniform(terrainGeneratorProgramObject, ufTerrainGridPointSpacingName,
              sceneData.terrainData.gridPointSpacing);
   setUniform(terrainGeneratorProgramObject, ufHeightMultiplierName, sceneData.terrainData.heightMultiplier);
@@ -63,17 +63,16 @@ SceneProgramObjects initSceneShaders(const WindowData &windowData, const SceneDa
              sceneData.lightData.specularData.intensity);
   setUniform(terrainGeneratorProgramObject, ufShineDamper, sceneData.lightData.specularData.shineDamper);
 
-  setUniform(terrainGeneratorProgramObject, ufGrassTextureName, 6);
-  setUniform(terrainGeneratorProgramObject, ufSandTextureName, 7);
-
-  setUniform(terrainGeneratorProgramObject, ufWater,
-             sceneData.terrainData.terrainProperties[kWaterIndex].color);
-  setUniform(terrainGeneratorProgramObject, ufGrass,
-             sceneData.terrainData.terrainProperties[kGrassIndex].color);
-  setUniform(terrainGeneratorProgramObject, ufSand,
-             sceneData.terrainData.terrainProperties[kSandIndex].color);
-
-  setUniform(terrainGeneratorProgramObject, ufDebugScale, sceneData.skyboxData.debugScale);
+  setUniform(terrainGeneratorProgramObject, ufTerrainTextures, 6);
+  setUniform(terrainGeneratorProgramObject, ufTerrainCount, kTerrainCount);
+  setUniform(terrainGeneratorProgramObject, ufTerrainColors,
+             sceneData.terrainData.terrainProperties.textureScalings);
+  setUniform(terrainGeneratorProgramObject, ufTerrainColors, sceneData.terrainData.terrainProperties.colors);
+  setUniform(terrainGeneratorProgramObject, ufTerrainColors,
+             sceneData.terrainData.terrainProperties.colorStrengths);
+  setUniform(terrainGeneratorProgramObject, ufTerrainHeights,
+             sceneData.terrainData.terrainProperties.heights);
+  setUniform(terrainGeneratorProgramObject, ufTerrainBlends, sceneData.terrainData.terrainProperties.blends);
 
   // Terrain noise/color/falloff map shader
   std::vector<GLuint> terrainGeneratorDebugShaderObjects;
