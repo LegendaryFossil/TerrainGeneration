@@ -94,8 +94,7 @@ vec3 getReflectionColor(const vec4 clipSpacePosition, const vec2 distortionTextu
 	return mix(colorMapValueGamma, reflectionColor, clamp(fresnel_schlick(vec3(0.04), viewDirection, waterNormal), 0.0, 1.0));
 }
 
-vec3 getSpecularReflection(const vec2 distortionTextureCoordinates, const vec3 viewDirection, 
-						const vec3 lightDirection, const vec3 waterNormal) {
+vec3 getSpecularReflection(const vec3 viewDirection, const vec3 lightDirection, const vec3 waterNormal) {
 	const vec3 halfWay = normalize(lightDirection + viewDirection);
 	return specularLightIntensity * max(0.0, pow(dot(waterNormal, halfWay), shineDamper)) * specularLightReflection;
 }
@@ -105,7 +104,7 @@ bool isTerrainType(const vec3 colorMapValue, const vec3 terrainType) {
 	return all(lessThanEqual(abs(colorMapValue - terrainType), vec3(eps)));
 }
 
-vec3 getTerrainTextureColor(const vec3 colorMapValue, const vec3 worldPosition, const vec3 textureWeights) {
+vec3 getTerrainTextureColor(const vec3 worldPosition, const vec3 textureWeights) {
 	const float eps = 0.0001;
 
 	float heightPercent = smoothstep(minHeight, maxHeight, worldPosition.y);
@@ -159,12 +158,12 @@ void main() {
 
 		const vec3 reflectionColor = getReflectionColor(clipSpacePosTE, distortionTexCoord, pow(colorMapValue, gamma), 
 		viewDirection, waterNormal);
-		const vec3 specularReflection = getSpecularReflection(distortionTexCoord, viewDirection, lightDirection, waterNormal);
+		const vec3 specularReflection = getSpecularReflection(viewDirection, lightDirection, waterNormal);
 		
 		outputColor = reflectionColor + specularReflection;
 	} else {
 		const vec3 worldNormal = mat3(modelToWorldMatrix) * modelNormal;
-		vec3 diffuseConstant = getTerrainTextureColor(colorMapValue, worldPositionTE, triPlanarTextureWeight(worldNormal));
+		vec3 diffuseConstant = getTerrainTextureColor(worldPositionTE, triPlanarTextureWeight(worldNormal));
 		const vec3 diffuseReflection = diffuseConstant * clamp(dot(lightDirection, viewNormal), 0.0f, 1.0f);
 		outputColor = ambientConstant * diffuseConstant + diffuseReflection;
 	}
