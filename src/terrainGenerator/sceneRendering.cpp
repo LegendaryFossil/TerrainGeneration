@@ -129,9 +129,11 @@ void renderFalloffMap(const Mesh &terrainMesh, const glm::mat4 &viewMatrix, cons
   renderMaps(terrainMesh, viewMatrix, viewToClipMatrix, terrainGeneratorDebugProgramObject);
 }
 
-void renderLight(const std::vector<Mesh> &lightMeshes, const glm::mat4 &viewMatrix,
-                 const glm::mat4 &viewToClipMatrix,
-                 const GLuint lightProgramObject) {
+void renderLight(const std::vector<Mesh> &lightMeshes, const unsigned int frameBufferWidth,
+                 const unsigned int frameBufferHeight, const glm::mat4 &viewMatrix,
+                 const glm::mat4 &viewToClipMatrix, const GLuint lightProgramObject) {
+  glViewport(0, 0, frameBufferWidth, frameBufferHeight);
+
   setUniform(lightProgramObject, ufWorldToViewMatrixName, viewMatrix);
   setUniform(lightProgramObject, ufViewToClipMatrixName, viewToClipMatrix);
 
@@ -145,8 +147,11 @@ void renderLight(const std::vector<Mesh> &lightMeshes, const glm::mat4 &viewMatr
   }
 }
 
-void renderWater(const Mesh &waterMesh, const SceneData &sceneData, const glm::mat4 &viewMatrix,
+void renderWater(const Mesh &waterMesh, const SceneData &sceneData, const unsigned int frameBufferWidth,
+                 const unsigned int frameBufferHeight, const glm::mat4 &viewMatrix,
                  const glm::mat4 &viewToClipMatrix, const GLuint waterProgramObject) {
+  glViewport(0, 0, frameBufferWidth, frameBufferHeight);
+
   glBindVertexArray(waterMesh.vaoHandle);
 
   glActiveTexture(GL_TEXTURE0);

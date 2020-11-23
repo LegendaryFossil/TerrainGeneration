@@ -87,6 +87,11 @@ static void keyCallback(GLFWwindow *window, int key, int scancode, int action, i
 
   if (controlInputData.keyState[GLFW_KEY_U]) {
     sceneSettings.showSettings = !sceneSettings.showSettings;
+    if (sceneSettings.showSettings == true) {
+      glfwSetInputMode(windowData.window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    } else {
+      glfwSetInputMode(windowData.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    }
   } else if (controlInputData.keyState[GLFW_KEY_M]) {
     sceneSettings.showImGuiDemo = !sceneSettings.showImGuiDemo;
   }
@@ -214,13 +219,13 @@ void renderScene() {
     camera.invertPitch();
 
     const auto viewMatrix = camera.createViewMatrix();
-    renderLight(sceneData.lightMeshes, viewMatrix, viewToClipMatrix,
+    renderLight(sceneData.lightMeshes, windowData.width, windowData.height, viewMatrix, viewToClipMatrix,
                 sceneProgramObjects.at(kLightShaderProgramObjectName));
     renderTerrain(windowData, sceneData, viewMatrix, viewToClipMatrix,
                   sceneSettings.renderMode == SceneSettings::RENDER_MODE::MESH ? false : true,
                   sceneProgramObjects);
-    renderWater(sceneData.meshIdToMesh.at(kWaterMeshId), sceneData, viewMatrix, viewToClipMatrix,
-                sceneProgramObjects.at(kWaterProgramObjectName));
+    renderWater(sceneData.meshIdToMesh.at(kWaterMeshId), sceneData, windowData.width, windowData.height,
+                viewMatrix, viewToClipMatrix, sceneProgramObjects.at(kWaterProgramObjectName));
   } break;
   default:
     assert(false);
@@ -289,7 +294,6 @@ void initTerrainGenerator() {
   glfwSetKeyCallback(windowData.window, keyCallback);
 
   glfwSetCursorPosCallback(windowData.window, cursorPosCallback);
-  // glfwSetCursorPos(windowData.window, windowData.center.x, windowData.center.y);
   glfwSetInputMode(windowData.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
   controlInputData.previousMousePosition = windowData.center;
 
