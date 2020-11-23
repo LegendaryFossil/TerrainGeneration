@@ -23,6 +23,7 @@
 #include "timeMeasureUtils.h"
 #include "uniformDefs.h"
 #include "windowDefs.h"
+#include <iostream>
 
 WindowData windowData = {};
 SceneData sceneData = {};
@@ -59,13 +60,18 @@ static void resizeWindowCallback(GLFWwindow *window, int width, int height) {
 }
 
 static void cursorPosCallback(GLFWwindow *window, double xPos, double yPos) {
-  /*glm::dvec2 mousePosition(xPos, yPos);
-  glm::dvec2 mouseDiff = mousePosition - controlInputData.previousMousePosition;
+  glm::vec2 mousePosition(xPos, yPos);
+  if (controlInputData.firstInput) {
+    controlInputData.previousMousePosition = mousePosition;
+    controlInputData.firstInput = false;
+  }
+
+  const auto mouseDelta = mousePosition - controlInputData.previousMousePosition;
   controlInputData.previousMousePosition = mousePosition;
 
-  GLfloat mouseSpeed = 0.001f;
-  fpsCamera.yawRotation(GLfloat(mouseDiff.x * mouseSpeed));
-  fpsCamera.pitchRotation(GLfloat(mouseDiff.y * mouseSpeed));*/
+  const auto mouseSensitivity = 0.001f;
+  sceneData.fpsCamera.yawRotation(-mouseDelta.x * mouseSensitivity);
+  sceneData.fpsCamera.pitchRotation(-mouseDelta.y * mouseSensitivity);
 }
 
 static void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods) {
@@ -77,7 +83,9 @@ static void keyCallback(GLFWwindow *window, int key, int scancode, int action, i
     }
   }
 
-  if (controlInputData.keyState[GLFW_KEY_M]) {
+  if (controlInputData.keyState[GLFW_KEY_U]) {
+    sceneSettings.showSettings = !sceneSettings.showSettings;
+  } else if (controlInputData.keyState[GLFW_KEY_M]) {
     sceneSettings.showImGuiDemo = !sceneSettings.showImGuiDemo;
   }
 
@@ -114,8 +122,10 @@ static void initFrameBuffers() {
 }
 
 void initSceneData() {
-  sceneData.terrainData = getDefaultTerrainData();
-  sceneData.meshIdToMesh = initSceneMeshes(sceneData.terrainData, sceneData.lightData);
+  sceneData.terrainData = initDefaultTerrainData();
+  sceneData.lightData = initDefaultLightData();
+  sceneData.meshIdToMesh = initSceneMeshes(sceneData.terrainData);
+  sceneData.lightMeshes = initLightMeshes(sceneData.lightData);
   sceneProgramObjects = initSceneShaders(windowData, sceneData);
   initFrameBuffers();
 }
@@ -134,23 +144,32 @@ void initGLStates() {
 void updateScene() {
   glfwPollEvents();
 
-  if (sceneSettings.controlMode == SceneSettings::CONTROL_MODE::CAMERA) {
-    handleCameraInput(&sceneData.fpsCamera, controlInputData, frameTimeData.frameTimeInSec);
-  } else if (sceneSettings.controlMode == SceneSettings::CONTROL_MODE::LIGHT) {
-    handleLightInput(&sceneData.meshIdToMesh.at(kLightMeshId), &sceneData.lightData, controlInputData,
-                     frameTimeData.frameTimeInSec);
+  if (!sceneSettings.showSettings) {
+    if (sceneSettings.controlMode == SceneSettings::CONTROL_MODE::CAMERA) {
+      handleCameraInput(&sceneData.fpsCamera, controlInputData, frameTimeData.frameTimeInSec);
+    } else if (sceneSettings.controlMode == SceneSettings::CONTROL_MODE::LIGHT_1 ||
+               sceneSettings.controlMode == SceneSettings::CONTROL_MODE::LIGHT_2) {
+      const auto lightIndex = int(sceneSettings.controlMode);
+
+      handleLightInput(&sceneData.lightMeshes[lightIndex], &sceneData.lightData.positions[lightIndex],
+                       controlInputData, frameTimeData.frameTimeInSec);
+    }
+  } else {
+    handleUIInput(&sceneSettings, &sceneData.terrainData, &sceneData.waterData, &sceneData.lightData,
+                  &sceneData.skyboxData, &sceneData.meshIdToMesh);
   }
 
-  sceneData.terrainData.waterDistortionMoveFactor +=
-      sceneData.terrainData.waterDistortionSpeed * float(frameTimeData.frameTimeInSec);
-  sceneData.terrainData.waterDistortionMoveFactor =
-      std::fmod(sceneData.terrainData.waterDistortionMoveFactor, 1.0f);
+  sceneData.waterData.waterDistortionMoveFactor +=
+      sceneData.waterData.waterDistortionSpeed * float(frameTimeData.frameTimeInSec);
+  sceneData.waterData.waterDistortionMoveFactor =
+      std::fmod(sceneData.waterData.waterDistortionMoveFactor, 1.0f);
 
   sceneData.skyboxData.skyboxRotation +=
       sceneData.skyboxData.skyboxRotationSpeed * float(frameTimeData.frameTimeInSec);
 
-  handleUIInput(&sceneSettings, &sceneData.terrainData, &sceneData.lightData, &sceneData.skyboxData,
-                &sceneData.meshIdToMesh);
+  auto &waterMesh = sceneData.meshIdToMesh.at(kWaterMeshId);
+  waterMesh.modelTransformation =
+      glm::scale(glm::identity<glm::mat4>(), glm::vec3(sceneData.terrainData.gridPointSpacing));
 }
 
 void renderScene() {
@@ -178,9 +197,9 @@ void renderScene() {
     // This assumes no model transformation affects the terrain (i.e. identity matrix transformation)
     // and that water height is always at y = 0.0
     auto &camera = sceneData.fpsCamera;
-    const auto waterPositionY = 0.0f;
+    const auto waterPositionY = 0.2f;
     auto cameraPosition = camera.cameraPosition();
-    const auto distanceToMoveY = 2.0f * (camera.cameraPosition().y - waterPositionY);
+    const auto distanceToMoveY = 2.0f * (camera.cameraPosition().y - 0.31f);
     cameraPosition.y -= distanceToMoveY;
     camera.setCameraPosition(cameraPosition);
     camera.invertPitch();
@@ -193,11 +212,13 @@ void renderScene() {
     camera.invertPitch();
 
     const auto viewMatrix = camera.createViewMatrix();
-    renderLight(sceneData.meshIdToMesh.at(kLightMeshId), viewMatrix, viewToClipMatrix,
+    renderLight(sceneData.lightMeshes, viewMatrix, viewToClipMatrix,
                 sceneProgramObjects.at(kLightShaderProgramObjectName));
     renderTerrain(windowData, sceneData, viewMatrix, viewToClipMatrix,
                   sceneSettings.renderMode == SceneSettings::RENDER_MODE::MESH ? false : true,
                   sceneProgramObjects);
+    renderWater(sceneData.meshIdToMesh.at(kWaterMeshId), sceneData, viewMatrix, viewToClipMatrix,
+                sceneProgramObjects.at(kWaterProgramObjectName));
   } break;
   default:
     assert(false);
@@ -205,7 +226,9 @@ void renderScene() {
   }
 
   // Call here to always render UI at the very front
-  renderUI();
+  if (sceneSettings.showSettings) {
+    renderUI();
+  }
 
   glfwSwapBuffers(windowData.window);
 }
@@ -216,6 +239,15 @@ void freeResources() {
     glDeleteBuffers(1, &mesh.iboHandle);
 
     for (auto &textureHandle : mesh.textureHandles) {
+      glDeleteTextures(1, &textureHandle);
+    }
+  }
+
+  for (auto &lightMesh : sceneData.lightMeshes) {
+    glDeleteBuffers(1, &lightMesh.vboHandle);
+    glDeleteBuffers(1, &lightMesh.iboHandle);
+
+    for (auto &textureHandle : lightMesh.textureHandles) {
       glDeleteTextures(1, &textureHandle);
     }
   }
@@ -242,6 +274,7 @@ void initTerrainGenerator() {
 
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+
   windowData.window = glfwCreateWindow(windowData.width, windowData.height, "Terrain Generator", NULL, NULL);
   if (!windowData.window) {
     glfwTerminate();
@@ -253,9 +286,9 @@ void initTerrainGenerator() {
 
   glfwSetKeyCallback(windowData.window, keyCallback);
 
-  // Disable mouse movements for now...
-  // glfwSetCursorPosCallback(windowData.window, cursorPosCallback);
-  glfwSetCursorPos(windowData.window, windowData.center.x, windowData.center.y);
+  glfwSetCursorPosCallback(windowData.window, cursorPosCallback);
+  // glfwSetCursorPos(windowData.window, windowData.center.x, windowData.center.y);
+  glfwSetInputMode(windowData.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
   controlInputData.previousMousePosition = windowData.center;
 
   glfwMakeContextCurrent(windowData.window);

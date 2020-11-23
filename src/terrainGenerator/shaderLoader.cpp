@@ -160,13 +160,19 @@ void setUniform(const GLuint programObject, const std::string &uniformName, cons
 void setUniform(const GLuint programObject, const std::string &uniformName,
                 const std::vector<float> &uniformValues) {
   glProgramUniform1fv(programObject, glGetUniformLocation(programObject, uniformName.c_str()),
-                      uniformValues.size(), uniformValues.data());
+                      GLsizei(uniformValues.size()), uniformValues.data());
 }
 
 void setUniform(const GLuint programObject, const std::string &uniformName,
                 const std::vector<glm::vec3> &uniformValues) {
   glProgramUniform3fv(programObject, glGetUniformLocation(programObject, uniformName.c_str()),
-                      uniformValues.size(), glm::value_ptr(uniformValues[0]));
+                      GLsizei(uniformValues.size()), glm::value_ptr(uniformValues[0]));
+}
+
+void setUniform(const GLuint programObject, const std::string &uniformName,
+                const std::vector<glm::vec4> &uniformValues) {
+  glProgramUniform4fv(programObject, glGetUniformLocation(programObject, uniformName.c_str()),
+                      GLsizei(uniformValues.size()), glm::value_ptr(uniformValues[0]));
 }
 
 // Matrices

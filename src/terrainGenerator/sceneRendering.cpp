@@ -49,8 +49,8 @@ static void renderSceneImpl(const SceneData &sceneData, const unsigned int frame
   glActiveTexture(GL_TEXTURE1);
   glBindTexture(GL_TEXTURE_2D, terrainMesh.textureHandles[1]); // Color map
 
-  glActiveTexture(GL_TEXTURE6);
-  glBindTexture(GL_TEXTURE_2D_ARRAY, terrainMesh.textureHandles[5]);
+  glActiveTexture(GL_TEXTURE3);
+  glBindTexture(GL_TEXTURE_2D_ARRAY, terrainMesh.textureHandles[3]);
   setUniform(terrainGeneratorProgramObject, ufTerrainTextureScalings,
              sceneData.terrainData.terrainProperties.textureScalings);
 
@@ -59,11 +59,8 @@ static void renderSceneImpl(const SceneData &sceneData, const unsigned int frame
   setUniform(terrainGeneratorProgramObject, ufNormalMatrix,
              glm::transpose(glm::inverse(glm::mat3(viewMatrix * terrainMesh.modelTransformation))));
   setUniform(terrainGeneratorProgramObject, ufViewToClipMatrixName, viewToClipMatrix);
-  setUniform(terrainGeneratorProgramObject, ufWorldLightPositionName, sceneData.lightData.worldLightPosition);
   setUniform(terrainGeneratorProgramObject, ufViewportSizeName,
              glm::vec2(frameBufferWidth, frameBufferHeight));
-  setUniform(terrainGeneratorProgramObject, ufWaterDistortionMoveFactorName,
-             sceneData.terrainData.waterDistortionMoveFactor);
   setUniform(terrainGeneratorProgramObject, ufTerrainGridPointSpacingName,
              sceneData.terrainData.gridPointSpacing);
   setUniform(terrainGeneratorProgramObject, ufHeightMultiplierName, sceneData.terrainData.heightMultiplier);
@@ -74,6 +71,9 @@ static void renderSceneImpl(const SceneData &sceneData, const unsigned int frame
   setUniform(terrainGeneratorProgramObject, ufTerrainHeights,
              sceneData.terrainData.terrainProperties.heights);
   setUniform(terrainGeneratorProgramObject, ufTerrainBlends, sceneData.terrainData.terrainProperties.blends);
+
+  setUniform(terrainGeneratorProgramObject, ufWorldLightPositionsName, sceneData.lightData.positions);
+  setUniform(terrainGeneratorProgramObject, ufLightColorsName, sceneData.lightData.colors);
 
   validateProgramObject(terrainGeneratorProgramObject);
   glUseProgram(terrainGeneratorProgramObject);
@@ -129,30 +129,50 @@ void renderFalloffMap(const Mesh &terrainMesh, const glm::mat4 &viewMatrix, cons
   renderMaps(terrainMesh, viewMatrix, viewToClipMatrix, terrainGeneratorDebugProgramObject);
 }
 
-void renderLight(const Mesh &lightMesh, const glm::mat4 &viewMatrix, const glm::mat4 &viewToClipMatrix,
+void renderLight(const std::vector<Mesh> &lightMeshes, const glm::mat4 &viewMatrix,
+                 const glm::mat4 &viewToClipMatrix,
                  const GLuint lightProgramObject) {
-  glBindVertexArray(lightMesh.vaoHandle);
-
-  setUniform(lightProgramObject, ufModelToWorldMatrixName, lightMesh.modelTransformation);
   setUniform(lightProgramObject, ufWorldToViewMatrixName, viewMatrix);
   setUniform(lightProgramObject, ufViewToClipMatrixName, viewToClipMatrix);
 
-  validateProgramObject(lightProgramObject);
-  glUseProgram(lightProgramObject);
-  glDrawElements(GL_TRIANGLES, GLsizei(lightMesh.indices.size()), GL_UNSIGNED_INT, (void *)0);
-  glUseProgram(0);
+  for (const auto &lightMesh : lightMeshes) {
+    glBindVertexArray(lightMesh.vaoHandle);
+    setUniform(lightProgramObject, ufModelToWorldMatrixName, lightMesh.modelTransformation);
+    validateProgramObject(lightProgramObject);
+    glUseProgram(lightProgramObject);
+    glDrawElements(GL_TRIANGLES, GLsizei(lightMesh.indices.size()), GL_UNSIGNED_INT, (void *)0);
+    glUseProgram(0);
+  }
 }
 
-void renderWater(const Mesh &waterMesh, const GLuint fboTexture, const glm::mat4 &viewMatrix,
+void renderWater(const Mesh &waterMesh, const SceneData &sceneData, const glm::mat4 &viewMatrix,
                  const glm::mat4 &viewToClipMatrix, const GLuint waterProgramObject) {
   glBindVertexArray(waterMesh.vaoHandle);
 
   glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, fboTexture); // Scene texture
+  glBindTexture(GL_TEXTURE_2D, waterMesh.textureHandles[0]); // Dudv map
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_2D, waterMesh.textureHandles[1]); // Normal map
+  glActiveTexture(GL_TEXTURE2);
+  glBindTexture(GL_TEXTURE_2D, sceneData.frameBufferObject.fboTexture);
 
   setUniform(waterProgramObject, ufModelToWorldMatrixName, waterMesh.modelTransformation);
   setUniform(waterProgramObject, ufWorldToViewMatrixName, viewMatrix);
   setUniform(waterProgramObject, ufViewToClipMatrixName, viewToClipMatrix);
+  setUniform(waterProgramObject, ufNormalMatrix,
+             glm::transpose(glm::inverse(glm::mat3(viewMatrix * waterMesh.modelTransformation))));
+  setUniform(waterProgramObject, ufWaterDistortionMoveFactorName,
+             sceneData.waterData.waterDistortionMoveFactor);
+  setUniform(waterProgramObject, ufWaterColor,
+             sceneData.terrainData.terrainProperties.colors[0]); // [0] = Water;
+
+  setUniform(waterProgramObject, ufWorldLightPositionsName, sceneData.lightData.positions);
+  setUniform(waterProgramObject, ufLightColorsName, sceneData.lightData.colors);
+  setUniform(waterProgramObject, ufSpecularLightColorsName, sceneData.lightData.specularData.colors);
+  setUniform(waterProgramObject, ufSpecularLightIntensitiesName,
+             sceneData.lightData.specularData.intensities);
+  setUniform(waterProgramObject, ufSpecularPowers, sceneData.lightData.specularData.powers);
+  setUniform(waterProgramObject, ufReflectionStrength, sceneData.lightData.reflectionStrength);
 
   validateProgramObject(waterProgramObject);
   glUseProgram(waterProgramObject);
@@ -165,13 +185,13 @@ void renderTerrainReflectionTexture(const SceneData &sceneData, const glm::mat4 
                                     const SceneProgramObjects &sceneProgramObjects) {
   glBindFramebuffer(GL_FRAMEBUFFER, sceneData.frameBufferObject.fboHandle);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  glEnable(GL_CLIP_DISTANCE1);
+  glEnable(GL_CLIP_DISTANCE0);
 
   // Render to texture
   renderSceneImpl(sceneData, sceneData.frameBufferObject.width, sceneData.frameBufferObject.height,
                   viewMatrix, viewToClipMatrix, false, sceneProgramObjects);
 
-  glDisable(GL_CLIP_DISTANCE1);
+  glDisable(GL_CLIP_DISTANCE0);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
@@ -180,19 +200,7 @@ void renderTerrain(const WindowData &windowData, const SceneData &sceneData, con
                    const SceneProgramObjects &sceneProgramObjects) {
   const auto &terrainMesh = sceneData.meshIdToMesh.at(kTerrainMeshId);
 
-  glActiveTexture(GL_TEXTURE3);
-  glBindTexture(GL_TEXTURE_2D, sceneData.frameBufferObject.fboTexture);
-  glActiveTexture(GL_TEXTURE4);
-  glBindTexture(GL_TEXTURE_2D, terrainMesh.textureHandles[3]); // Dudv map
-  glActiveTexture(GL_TEXTURE5);
-  glBindTexture(GL_TEXTURE_2D, terrainMesh.textureHandles[4]); // Normal map
-
   const auto terrainGeneratorProgramObject = sceneProgramObjects.at(kTerrainGeneratorProgramObjectName);
-  setUniform(terrainGeneratorProgramObject, ufSpecularLightReflectionName,
-             sceneData.lightData.specularData.reflection);
-  setUniform(terrainGeneratorProgramObject, ufSpecularLightIntensityName,
-             sceneData.lightData.specularData.intensity);
-  setUniform(terrainGeneratorProgramObject, ufShineDamper, sceneData.lightData.specularData.shineDamper);
 
   renderSceneImpl(sceneData, windowData.width, windowData.height, viewMatrix, viewToClipMatrix, isWireFrame,
                   sceneProgramObjects);

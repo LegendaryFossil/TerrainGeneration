@@ -27,6 +27,8 @@ void setUniform(const GLuint programObject, const std::string &uniformName,
                 const std::vector<float> &uniformValues);
 void setUniform(const GLuint programObject, const std::string &uniformName,
                 const std::vector<glm::vec3> &uniformValues);
+void setUniform(const GLuint programObject, const std::string &uniformName,
+                const std::vector<glm::vec4> &uniformValues);
 
 // Matrices
 void setUniform(const GLuint programObject, const std::string &uniformName, const float uniformValue);

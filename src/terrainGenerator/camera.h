@@ -20,16 +20,16 @@ public:
 
   glm::mat4 createViewMatrix();
 
-  void yawRotation(GLfloat angle);
-  void pitchRotation(GLfloat angle);
+  void yawRotation(float angle);
+  void pitchRotation(float angle);
   void invertPitch();
 
-  void moveForward(GLfloat moveSpeed);
-  void moveBackward(GLfloat moveSpeed);
-  void moveLeft(GLfloat moveSpeed);
-  void moveRight(GLfloat moveSpeed);
-  void moveUp(GLfloat moveSpeed);
-  void moveDown(GLfloat moveSpeed);
+  void moveForward(float moveSpeed);
+  void moveBackward(float moveSpeed);
+  void moveLeft(float moveSpeed);
+  void moveRight(float moveSpeed);
+  void moveUp(float moveSpeed);
+  void moveDown(float moveSpeed);
 
   void setCameraPosition(const glm::vec3 &cameraPosition) { _cameraPositionCartesian = cameraPosition; }
   glm::vec3 cameraPosition() const { return _cameraPositionCartesian; }

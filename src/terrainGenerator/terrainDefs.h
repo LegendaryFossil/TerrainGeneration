@@ -6,7 +6,6 @@
 #include <string>
 
 constexpr auto kPatchSize = 64.0f;
-constexpr auto kTerrainCount = 5;
 
 // Terrain
 struct TerrainData {
@@ -22,17 +21,16 @@ struct TerrainData {
   } terrainProperties;
 
   float gridPointSpacing = 1.0f; // Terrain scaling
-  float heightMultiplier = 65.0f;
+  float heightMultiplier = 103.0f;
 
-  float waterDistortionMoveFactor = 0.0f;
-  float waterDistortionSpeed = 0.05f;
+  int pixelsPerTriangle = 10; // How many pixels for triangle in patch edge for dynamic LOD
 
-  int pixelsPerTriangle = 20; // How many pixels for triangle in patch edge for dynamic LOD
+  int terrainCount;
 
   bool useFalloffMap = true;
 };
 
-inline TerrainData getDefaultTerrainData() {
+inline TerrainData initDefaultTerrainData() {
   const int mapSize = 512;
   // Only allow power of two
   assert(mapSize && !(mapSize & (mapSize - 1)));
@@ -48,46 +46,55 @@ inline TerrainData getDefaultTerrainData() {
   terrainData.noiseMapData.octaveOffset = glm::vec2(0.0f, 444.0f);
 
   terrainData.terrainProperties.names.push_back("Water");
-  terrainData.terrainProperties.colors.push_back(glm::vec3(0.0f, 0.0f, 1.0f));
-  terrainData.terrainProperties.colorStrengths.push_back(0.5f);
+  terrainData.terrainProperties.colors.push_back(glm::vec3(0.02f, 0.33f, 0.49f));
+  terrainData.terrainProperties.colorStrengths.push_back(0.495f);
   terrainData.terrainProperties.heights.push_back(0.0f);
-  terrainData.terrainProperties.blends.push_back(0.0f);
-  terrainData.terrainProperties.textureScalings.push_back(50.0f);
+  terrainData.terrainProperties.blends.push_back(0.015f);
+  terrainData.terrainProperties.textureScalings.push_back(60.825f);
 
   terrainData.terrainProperties.names.push_back("Sand");
-  terrainData.terrainProperties.colors.push_back(glm::vec3(1.0f, 1.0f, 0.45f));
+  terrainData.terrainProperties.colors.push_back(glm::vec3(0.9f, 0.9f, 0.059f));
   terrainData.terrainProperties.heights.push_back(0.005f);
-  terrainData.terrainProperties.colorStrengths.push_back(0.5f);
-  terrainData.terrainProperties.blends.push_back(0.0f);
-  terrainData.terrainProperties.textureScalings.push_back(50.0f);
+  terrainData.terrainProperties.colorStrengths.push_back(0.320f);
+  terrainData.terrainProperties.blends.push_back(0.015f);
+  terrainData.terrainProperties.textureScalings.push_back(61.649f);
 
   terrainData.terrainProperties.names.push_back("Grass");
   terrainData.terrainProperties.colors.push_back(glm::vec3(0.0f, 1.0f, 0.0f));
   terrainData.terrainProperties.heights.push_back(0.021f);
-  terrainData.terrainProperties.colorStrengths.push_back(0.5f);
-  terrainData.terrainProperties.blends.push_back(0.0f);
-  terrainData.terrainProperties.textureScalings.push_back(50.0f);
+  terrainData.terrainProperties.colorStrengths.push_back(0.160f);
+  terrainData.terrainProperties.blends.push_back(0.041f);
+  terrainData.terrainProperties.textureScalings.push_back(56.289f);
+
+  terrainData.terrainProperties.names.push_back("Rock");
+  terrainData.terrainProperties.colors.push_back(glm::vec3(0.13f, 0.105f, 0.105f));
+  terrainData.terrainProperties.heights.push_back(0.139f);
+  terrainData.terrainProperties.colorStrengths.push_back(0.381f);
+  terrainData.terrainProperties.blends.push_back(0.149f);
+  terrainData.terrainProperties.textureScalings.push_back(25.0f);
 
   terrainData.terrainProperties.names.push_back("Mountain");
-  terrainData.terrainProperties.colors.push_back(glm::vec3(0.43f, 0.227f, 0.03f));
-  terrainData.terrainProperties.heights.push_back(0.289f);
-  terrainData.terrainProperties.colorStrengths.push_back(0.5f);
-  terrainData.terrainProperties.blends.push_back(0.0f);
-  terrainData.terrainProperties.textureScalings.push_back(50.0f);
+  terrainData.terrainProperties.colors.push_back(glm::vec3(0.113f, 0.105f, 0.098f));
+  terrainData.terrainProperties.heights.push_back(0.325f);
+  terrainData.terrainProperties.colorStrengths.push_back(0.572f);
+  terrainData.terrainProperties.blends.push_back(0.191f);
+  terrainData.terrainProperties.textureScalings.push_back(41.0f);
 
   terrainData.terrainProperties.names.push_back("Snow");
-  terrainData.terrainProperties.colors.push_back(glm::vec3(1.0f, 1.0f, 1.0f));
-  terrainData.terrainProperties.heights.push_back(0.763f);
-  terrainData.terrainProperties.colorStrengths.push_back(0.5f);
-  terrainData.terrainProperties.blends.push_back(0.0f);
-  terrainData.terrainProperties.textureScalings.push_back(50.0f);
+  terrainData.terrainProperties.colors.push_back(glm::vec3(0.66f, 0.66f, 0.66f));
+  terrainData.terrainProperties.heights.push_back(0.881f);
+  terrainData.terrainProperties.colorStrengths.push_back(0.361f);
+  terrainData.terrainProperties.blends.push_back(0.088f);
+  terrainData.terrainProperties.textureScalings.push_back(87.0f);
 
-  assert(terrainData.terrainProperties.names.size() == kTerrainCount);
-  assert(terrainData.terrainProperties.colors.size() == kTerrainCount);
-  assert(terrainData.terrainProperties.colorStrengths.size() == kTerrainCount);
-  assert(terrainData.terrainProperties.heights.size() == kTerrainCount);
-  assert(terrainData.terrainProperties.blends.size() == kTerrainCount);
-  assert(terrainData.terrainProperties.textureScalings.size() == kTerrainCount);
+  terrainData.terrainCount = int(terrainData.terrainProperties.colors.size());
+
+  assert(terrainData.terrainProperties.names.size() == terrainData.terrainCount);
+  assert(terrainData.terrainProperties.colors.size() == terrainData.terrainCount);
+  assert(terrainData.terrainProperties.colorStrengths.size() == terrainData.terrainCount);
+  assert(terrainData.terrainProperties.heights.size() == terrainData.terrainCount);
+  assert(terrainData.terrainProperties.blends.size() == terrainData.terrainCount);
+  assert(terrainData.terrainProperties.textureScalings.size() == terrainData.terrainCount);
 
   return terrainData;
 }
