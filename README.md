@@ -75,11 +75,13 @@ With the falloff map activated you get a terrain that is surrounded by water. Th
 This setting controls the dynamic LOD. The LOD is determined by how many pixels each patch edge occupies. The setting controls how many pixels each triangle occupies in the tessellated edge. In other words, a small value means high tessellation levels thus a high-detail mesh and a large value means low tessellation levels thus a low-detailed mesh. This can be seen clearly in the Wireframe Mesh render mode
 
 **Light Settings**
+
 The lightning in the scene is based on the Blinn-Phong reflection model. Properties that can be modified here are the light and specular light color, the intensity of the specular light and the specular power (large values => small highlights, small values > large highlights)
 
 Note that the position of the light sources can be moved with the same keyboard keys as for the camera. To do so select the  light source you want to move in the scene under **Scene Control**. The lights are rendered as meshes to make it easier to see where they are located.
 
 **Water settings**
+
 The water settings allow two properties to be changed: the water distortion speed and the distortion map used. Every distortion map has an associated normal map that is used for bump mapping the water as well as adding specular highlights to it.
 
 A video below demonstrates some of these features
