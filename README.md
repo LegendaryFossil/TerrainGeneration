@@ -109,7 +109,7 @@ FastNoise is used for the perlin noise generator when generating the noise map:
 
 https://github.com/Auburn/FastNoise/tree/FastNoise-Legacy
 
-The dynamic LOD and terrain generation through GPU tessellation is based on a chapter by Ant́onio Ramires Fernandes and Bruno Oliveira in OpenGL Insights (Chapter 10: GPU Tessellation: We Sstill Have a LOD of Terrain to Cover):
+The dynamic LOD and terrain generation through GPU tessellation is based on a chapter by Ant́onio Ramires Fernandes and Bruno Oliveira in OpenGL Insights (Chapter 10: GPU Tessellation: We Still Have a LOD of Terrain to Cover):
 
 https://github.com/OpenGLInsights/OpenGLInsightsCode
 
