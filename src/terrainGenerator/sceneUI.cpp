@@ -211,6 +211,15 @@ void handleUIInput(SceneSettings *sceneSettings, TerrainData *terrainData, Scene
     // Do nothing, just update the variable
   }
 
+  ImGui::NewLine();
+  if (ImGui::Button("Reset terrain settings")) {
+    sceneSettings->renderMode = SceneSettings::RENDER_MODE::MESH;
+    *terrainData = initDefaultTerrainData();
+    updateTerrainMeshTexture(&meshIdToMesh->at(kTerrainMeshId), terrainData->noiseMapData,
+                             terrainData->useFalloffMap, terrainData->terrainProperties.colors,
+                             terrainData->terrainProperties.heights);
+  }
+
   ImGui::End();
 }
 
