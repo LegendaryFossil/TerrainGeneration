@@ -8,7 +8,8 @@
 struct SceneData {
   LightData lightData = {};
   TerrainData terrainData = {};
-  Camera fpsCamera = Camera(glm::vec3(188.0f, 83.0f, 655.0f), glm::vec3(1.0f, glm::half_pi<float>(), -1.66f));
+  Camera fpsCamera =
+      Camera(glm::vec3(207.0f, 75.0f, 640.0f), glm::vec3(1.0f, 1.57f, -1.7f));
   ViewFrustumData viewFrustumData = {};
   MeshIdToMesh meshIdToMesh = {};
   
