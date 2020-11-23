@@ -105,7 +105,7 @@ https://youtu.be/wbpMiKiSKm8
 
 https://github.com/SebLague
 
-FastNoise is used for the perlin noise generator when generating the noise map:
+FastNoise is used as the perlin noise generator when generating the noise map:
 
 https://github.com/Auburn/FastNoise/tree/FastNoise-Legacy
 
