@@ -128,3 +128,12 @@ https://github.com/glfw/glfw
 Credit also to Joey de Vries Learn OpenGL website which is a great resource for brushing up rusty skills in both basic and advanced topics in computer graphics:
 
 https://learnopengl.com/
+
+### Credit
+
+I'd like to thank colleagues and former colleagues for the support in this project: 
+Johan Nysjö for giving me valuable feedback on how to improve the lightning model and for helping in debugging.
+
+Tobias Kruseborn for recommending me Sebastian Lague's video series.
+
+Peter Asplund for recommending me the chapter on GPU-based terrain generation and dynamic LOD in OpenGL Insights.
