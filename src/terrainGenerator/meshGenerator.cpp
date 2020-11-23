@@ -519,12 +519,12 @@ void updateTerrainMeshTexture(Mesh *terrainMesh, const NoiseMapData &noiseMapDat
                   generateColorMapTexture(noiseMap, colors, heights).data());
 }
 
-void updateTerrainMeshWaterTextures(Mesh *terrainMesh, const std::string mapIndex) {
+void updateTerrainMeshWaterTextures(Mesh *waterMesh, const std::string mapIndex) {
   int dudvWidth, dudvHeight;
   unsigned char *dudvPixelData = nullptr;
   loadTexture("waterDuDv" + mapIndex + ".png", waterDuDvTexturePath, &dudvWidth, &dudvHeight, &dudvPixelData);
   assert(dudvPixelData != nullptr);
-  createTexture2D(&terrainMesh->textureHandles[3], GL_REPEAT, GL_NEAREST, dudvWidth, dudvHeight,
+  createTexture2D(&waterMesh->textureHandles[0], GL_REPEAT, GL_LINEAR, dudvWidth, dudvHeight,
                   GL_UNSIGNED_BYTE, dudvPixelData);
   freeTexture(dudvPixelData);
 
@@ -533,7 +533,7 @@ void updateTerrainMeshWaterTextures(Mesh *terrainMesh, const std::string mapInde
   loadTexture("waterNormalMap" + mapIndex + ".png", waterNormalMapTexturePath, &normalMapWidth,
               &normalMapHeight, &normalMapPixelData);
   assert(normalMapPixelData != nullptr);
-  createTexture2D(&terrainMesh->textureHandles[4], GL_REPEAT, GL_NEAREST, normalMapWidth, normalMapHeight,
+  createTexture2D(&waterMesh->textureHandles[1], GL_REPEAT, GL_LINEAR, normalMapWidth, normalMapHeight,
                   GL_UNSIGNED_BYTE, normalMapPixelData);
   freeTexture(normalMapPixelData);
 }

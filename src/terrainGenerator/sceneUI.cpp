@@ -126,7 +126,7 @@ void handleUIInput(SceneSettings *sceneSettings, TerrainData *terrainData, Scene
       const auto isSelected = sceneSettings->currentWaterDuDv == sceneSettings->waterDuDvs[i];
       if (ImGui::Selectable(sceneSettings->waterDuDvs[i].c_str(), isSelected)) {
         sceneSettings->currentWaterDuDv = sceneSettings->waterDuDvs[i];
-        updateTerrainMeshWaterTextures(&meshIdToMesh->at(kTerrainMeshId), sceneSettings->currentWaterDuDv);
+        updateTerrainMeshWaterTextures(&meshIdToMesh->at(kWaterMeshId), sceneSettings->currentWaterDuDv);
       }
 
       if (isSelected)
