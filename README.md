@@ -129,9 +129,10 @@ Credit also to Joey de Vries Learn OpenGL website which is a great resource for 
 
 https://learnopengl.com/
 
-### Credit
+### Credits
 
 I'd like to thank colleagues and former colleagues for the support in this project: 
+
 Johan Nysjö for giving me valuable feedback on how to improve the lightning model and for helping in debugging.
 
 Tobias Kruseborn for recommending me Sebastian Lague's video series.
