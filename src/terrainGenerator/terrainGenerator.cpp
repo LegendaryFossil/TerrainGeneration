@@ -69,9 +69,11 @@ static void cursorPosCallback(GLFWwindow *window, double xPos, double yPos) {
   const auto mouseDelta = mousePosition - controlInputData.previousMousePosition;
   controlInputData.previousMousePosition = mousePosition;
 
-  const auto mouseSensitivity = 0.001f;
-  sceneData.fpsCamera.yawRotation(-mouseDelta.x * mouseSensitivity);
-  sceneData.fpsCamera.pitchRotation(-mouseDelta.y * mouseSensitivity);
+  if (!sceneSettings.showSettings) {
+    const auto mouseSensitivity = 0.001f;
+    sceneData.fpsCamera.yawRotation(-mouseDelta.x * mouseSensitivity);
+    sceneData.fpsCamera.pitchRotation(-mouseDelta.y * mouseSensitivity);
+  }
 }
 
 static void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods) {
