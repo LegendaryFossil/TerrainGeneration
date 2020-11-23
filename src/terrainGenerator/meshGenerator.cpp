@@ -6,6 +6,13 @@
 #include "textureGenerator.h"
 #include <assert.h>
 
+static void validateTerrainMeshTextureData(const unsigned char *pixelData, const int width, const int height,
+                                           const int expectedWidth, const int expectedHeight) {
+  assert(pixelData != nullptr);
+  assert(width == expectedWidth);
+  assert(height == expectedHeight);
+}
+
 static void createVertexBufferObject(GLuint *vboHandle, const std::vector<Vertex> &vertices) {
   glBindBuffer(GL_ARRAY_BUFFER, *vboHandle);
   glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * vertices.size(), vertices.data(), GL_STATIC_DRAW);
@@ -18,7 +25,7 @@ static void createIndexBufferObject(GLuint *iboHandle, const std::vector<uint32_
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
-static void calculateMeshNormals(Mesh *mesh) {
+static void calculateNormals(Mesh *mesh) {
   for (size_t i = 0, size = mesh->indices.size(); i < size; i = i + 3) {
     auto &v1 = mesh->vertices[mesh->indices[i]];
     auto &v2 = mesh->vertices[mesh->indices[i + 1]];
@@ -38,12 +45,55 @@ static void calculateMeshNormals(Mesh *mesh) {
   }
 }
 
+static void calculateTangentVectors(Mesh *mesh) {
+  for (size_t i = 0, size = mesh->indices.size(); i < size; i = i + 3) {
+    auto &v1 = mesh->vertices[mesh->indices[i]];
+    auto &v2 = mesh->vertices[mesh->indices[i + 1]];
+    auto &v3 = mesh->vertices[mesh->indices[i + 2]];
+
+    const auto edgeOne = glm::vec3(v2.position3f) - glm::vec3(v1.position3f);
+    const auto edgeTwo = glm::vec3(v3.position3f) - glm::vec3(v1.position3f);
+    const auto deltaUVOne = v2.textureCoordinate - v1.textureCoordinate;
+    const auto deltaUVTwo = v3.textureCoordinate - v1.textureCoordinate;
+
+    const auto fract = 1.0f / (deltaUVOne.x * deltaUVTwo.y - deltaUVTwo.x * deltaUVOne.y);
+
+    glm::vec3 tangent(0.0f);
+    glm::vec3 bitangent(0.0f);
+
+    tangent.x = fract * (deltaUVTwo.y * edgeOne.x - deltaUVOne.y * edgeTwo.x);
+    tangent.y = fract * (deltaUVTwo.y * edgeOne.y - deltaUVOne.y * edgeTwo.y);
+    tangent.z = fract * (deltaUVTwo.y * edgeOne.z - deltaUVOne.y * edgeTwo.z);
+
+    bitangent.x = fract * (-deltaUVTwo.x * edgeOne.x + deltaUVOne.x * edgeTwo.x);
+    bitangent.y = fract * (-deltaUVTwo.x * edgeOne.y + deltaUVOne.x * edgeTwo.y);
+    bitangent.z = fract * (-deltaUVTwo.x * edgeOne.z + deltaUVOne.x * edgeTwo.z);
+
+    v1.tangent += tangent;
+    v2.tangent += tangent;
+    v3.tangent += tangent;
+
+    v1.bitangent += bitangent;
+    v2.bitangent += bitangent;
+    v3.bitangent += bitangent;
+  }
+
+  for (size_t i = 0, size = mesh->vertices.size(); i < size; i++) {
+    auto &v = mesh->vertices[i];
+    const auto &T = v.tangent;
+    const auto &B = v.bitangent;
+    const auto &N = v.normal;
+    v.tangent = normalize(T - glm::dot(T, N) * N);
+    v.bitangent = glm::cross(N, T);
+  }
+}
+
 static Mesh generateMeshHeightMapVertices(const int mapWidth, const int mapHeight, const NoiseMap &noiseMap) {
   Mesh heightMapMesh = {};
 
   // Assume height map texture is a multiple of 64 (so minimum is that it contains one patch)
-  int numOfPatchesX = mapWidth / int(PATCH_SIZE);
-  int numOfPatchesZ = mapHeight / int(PATCH_SIZE);
+  int numOfPatchesX = mapWidth / int(kPatchSize);
+  int numOfPatchesZ = mapHeight / int(kPatchSize);
 
   int numOfPatches = numOfPatchesX * numOfPatchesZ;
   heightMapMesh.vertices.reserve(numOfPatches);
@@ -52,7 +102,7 @@ static Mesh generateMeshHeightMapVertices(const int mapWidth, const int mapHeigh
   for (size_t i = 0; i < numOfPatchesZ; ++i) {
     for (size_t j = 0; j < numOfPatchesX; ++j) {
       Vertex vertex = {};
-      vertex.position2f = glm::vec2((j * PATCH_SIZE) * 1.0f / mapWidth, (i * PATCH_SIZE) * 1.0f / mapHeight);
+      vertex.position2f = glm::vec2((j * kPatchSize) * 1.0f / mapWidth, (i * kPatchSize) * 1.0f / mapHeight);
       heightMapMesh.vertices.push_back(vertex);
     }
   }
@@ -68,11 +118,11 @@ static Mesh generateMeshHeightMapVertices(const int mapWidth, const int mapHeigh
 }
 
 static Mesh generateMeshFromHeightMap(const NoiseMapData &noiseMapData, const bool useFalloffMap,
-                                      const std::vector<TerrainProperty> &terrainProperties) {
+                                      const std::vector<glm::vec3> &colors,
+                                      const std::vector<float> &heights) {
   const auto noiseMap = generateNoiseMap(noiseMapData, useFalloffMap);
 
   Mesh terrainMesh = generateMeshHeightMapVertices(noiseMapData.width, noiseMapData.height, noiseMap);
-  // calculateMeshNormals(&terrainMesh);
   terrainMesh.modelTransformation = glm::identity<glm::mat4>();
 
   glGenBuffers(1, &terrainMesh.vboHandle);
@@ -87,7 +137,7 @@ static Mesh generateMeshFromHeightMap(const NoiseMapData &noiseMapData, const bo
   glBindBuffer(GL_ARRAY_BUFFER, terrainMesh.vboHandle);
 
   glEnableVertexAttribArray(0);
-  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 9 * sizeof(float), 0);
+  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 15 * sizeof(float), 0);
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, terrainMesh.iboHandle);
 
@@ -97,26 +147,60 @@ static Mesh generateMeshFromHeightMap(const NoiseMapData &noiseMapData, const bo
   createTexture2D(&terrainMesh.textureHandles[0], GL_CLAMP_TO_EDGE, GL_NEAREST, noiseMapData.width,
                   noiseMapData.height, GL_FLOAT, generateNoiseMapTexture(noiseMap).data());
   createTexture2D(&terrainMesh.textureHandles[1], GL_CLAMP_TO_EDGE, GL_NEAREST, noiseMapData.width,
-                  noiseMapData.height, GL_FLOAT, generateColorMapTexture(noiseMap, terrainProperties).data());
+                  noiseMapData.height, GL_FLOAT, generateColorMapTexture(noiseMap, colors, heights).data());
   createTexture2D(&terrainMesh.textureHandles[2], GL_CLAMP_TO_EDGE, GL_NEAREST, noiseMapData.width,
                   noiseMapData.height, GL_FLOAT, generateFalloffMap(noiseMapData.width).data());
 
-  int dudvWidth, dudvHeight;
-  unsigned char *dudvPixelData = nullptr;
-  loadTexture("waterDuDv1.png", waterDuDvTexturePath, &dudvWidth, &dudvHeight, &dudvPixelData);
-  assert(dudvPixelData != nullptr);
-  createTexture2D(&terrainMesh.textureHandles[3], GL_REPEAT, GL_NEAREST, dudvWidth, dudvHeight,
-                  GL_UNSIGNED_BYTE, dudvPixelData);
-  freeTexture(dudvPixelData);
+  std::vector<unsigned char *> terrainTexturesPixelData;
 
-  int normalMapWidth, normalMapHeight;
-  unsigned char *normalMapPixelData = nullptr;
-  loadTexture("waterNormalMap1.png", waterNormalMapTexturePath, &normalMapWidth, &normalMapHeight,
-              &normalMapPixelData);
-  assert(normalMapPixelData != nullptr);
-  createTexture2D(&terrainMesh.textureHandles[4], GL_REPEAT, GL_NEAREST, normalMapWidth, normalMapHeight,
-                  GL_UNSIGNED_BYTE, normalMapPixelData);
-  freeTexture(normalMapPixelData);
+  const auto expectedTerrainTextureDimension = 1024; // Ensure it is 1024x1024 textures
+  int terrainTextureWidth, terrainTextureHeight;
+  unsigned char *terrainTexturePixelData = nullptr;
+
+  loadTexture("sand.png", terrainTexturePath, &terrainTextureWidth, &terrainTextureHeight,
+              &terrainTexturePixelData);
+  validateTerrainMeshTextureData(terrainTexturePixelData, terrainTextureWidth, terrainTextureHeight,
+                                 expectedTerrainTextureDimension, expectedTerrainTextureDimension);
+  terrainTexturesPixelData.push_back(terrainTexturePixelData);
+
+  loadTexture("sand.png", terrainTexturePath, &terrainTextureWidth, &terrainTextureHeight,
+              &terrainTexturePixelData);
+  validateTerrainMeshTextureData(terrainTexturePixelData, terrainTextureWidth, terrainTextureHeight,
+                                 expectedTerrainTextureDimension, expectedTerrainTextureDimension);
+  terrainTexturesPixelData.push_back(terrainTexturePixelData);
+
+  loadTexture("grass.png", terrainTexturePath, &terrainTextureWidth, &terrainTextureHeight,
+              &terrainTexturePixelData);
+  validateTerrainMeshTextureData(terrainTexturePixelData, terrainTextureWidth, terrainTextureHeight,
+                                 expectedTerrainTextureDimension, expectedTerrainTextureDimension);
+  terrainTexturesPixelData.push_back(terrainTexturePixelData);
+
+  loadTexture("rock.png", terrainTexturePath, &terrainTextureWidth, &terrainTextureHeight,
+              &terrainTexturePixelData);
+  validateTerrainMeshTextureData(terrainTexturePixelData, terrainTextureWidth, terrainTextureHeight,
+                                 expectedTerrainTextureDimension, expectedTerrainTextureDimension);
+  terrainTexturesPixelData.push_back(terrainTexturePixelData);
+
+  loadTexture("mountain.png", terrainTexturePath, &terrainTextureWidth, &terrainTextureHeight,
+              &terrainTexturePixelData);
+  validateTerrainMeshTextureData(terrainTexturePixelData, terrainTextureWidth, terrainTextureHeight,
+                                 expectedTerrainTextureDimension, expectedTerrainTextureDimension);
+  terrainTexturesPixelData.push_back(terrainTexturePixelData);
+
+  loadTexture("snow.png", terrainTexturePath, &terrainTextureWidth, &terrainTextureHeight,
+              &terrainTexturePixelData);
+  validateTerrainMeshTextureData(terrainTexturePixelData, terrainTextureWidth, terrainTextureHeight,
+                                 expectedTerrainTextureDimension, expectedTerrainTextureDimension);
+  terrainTexturesPixelData.push_back(terrainTexturePixelData);
+
+  createTexture2DArray(&terrainMesh.textureHandles[3], GL_REPEAT, GL_NEAREST, terrainTextureWidth,
+                       terrainTextureHeight, GL_UNSIGNED_BYTE, terrainTexturesPixelData);
+
+  for (auto pixelData : terrainTexturesPixelData) {
+    freeTexture(pixelData);
+  }
+
+  terrainTexturesPixelData.clear();
 
   return terrainMesh;
 }
@@ -198,7 +282,7 @@ static Mesh generateSkyboxMesh() {
   glBindBuffer(GL_ARRAY_BUFFER, skyboxMesh.vboHandle);
 
   glEnableVertexAttribArray(0);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), 0);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 15 * sizeof(float), 0);
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, skyboxMesh.iboHandle);
 
@@ -214,7 +298,7 @@ static Mesh generateSkyboxMesh() {
   return skyboxMesh;
 }
 
-static Mesh generateLightMesh(const LightData &lightData) {
+static Mesh generateLightMesh(const glm::vec4 lightPosition) {
   Mesh lightMesh = {};
 
   // 0-3
@@ -277,8 +361,7 @@ static Mesh generateLightMesh(const LightData &lightData) {
   lightMesh.indices.push_back(4);
   lightMesh.indices.push_back(6);
 
-  lightMesh.modelTransformation =
-      glm::translate(glm::identity<glm::mat4>(), glm::vec3(lightData.worldLightPosition));
+  lightMesh.modelTransformation = glm::translate(glm::identity<glm::mat4>(), glm::vec3(lightPosition));
   lightMesh.modelTransformation = glm::scale(lightMesh.modelTransformation, glm::vec3(5.0f));
 
   glGenBuffers(1, &lightMesh.vboHandle);
@@ -293,7 +376,7 @@ static Mesh generateLightMesh(const LightData &lightData) {
   glBindBuffer(GL_ARRAY_BUFFER, lightMesh.vboHandle);
 
   glEnableVertexAttribArray(0);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), 0);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 15 * sizeof(float), 0);
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, lightMesh.iboHandle);
 
@@ -305,23 +388,24 @@ static Mesh generateLightMesh(const LightData &lightData) {
 static Mesh generateWaterMesh(const int mapWidth, const int mapHeight) {
   Mesh waterMesh{};
   // Assume height map texture is a multiple of 64 (so minimum is that it contains one patch)
-  int numOfPatchesX = mapWidth / int(PATCH_SIZE);
-  int numOfPatchesZ = mapHeight / int(PATCH_SIZE);
+  int numOfPatchesX = mapWidth / int(kPatchSize);
+  int numOfPatchesZ = mapHeight / int(kPatchSize);
 
   Vertex v1 = {};
-  v1.position3f = glm::vec3(0.0f, 0.0f, 0.0f);
+  const auto height = 0.2f;
+  v1.position3f = glm::vec3(0.0f, height, 0.0f);
   v1.textureCoordinate = glm::vec2(0.0f, 0.0f);
 
   Vertex v2 = {};
-  v2.position3f = glm::vec3(0.0f, 0.0f, numOfPatchesZ * PATCH_SIZE);
-  v2.textureCoordinate = glm::vec2(1.0f, 0.0f);
-
-  Vertex v3 = {};
-  v3.position3f = glm::vec3(numOfPatchesX * PATCH_SIZE, 0.0f, 0.0f);
+  v2.position3f = glm::vec3(0.0f, height, numOfPatchesZ * kPatchSize);
   v2.textureCoordinate = glm::vec2(0.0f, 1.0f);
 
+  Vertex v3 = {};
+  v3.position3f = glm::vec3(numOfPatchesX * kPatchSize, height, 0.0f);
+  v3.textureCoordinate = glm::vec2(1.0f, 0.0f);
+
   Vertex v4 = {};
-  v4.position3f = glm::vec3(numOfPatchesX * PATCH_SIZE, 0.0f, numOfPatchesZ * PATCH_SIZE);
+  v4.position3f = glm::vec3(numOfPatchesX * kPatchSize, height, numOfPatchesZ * kPatchSize);
   v4.textureCoordinate = glm::vec2(1.0f, 1.0f);
 
   waterMesh.vertices.push_back(v1);
@@ -337,6 +421,9 @@ static Mesh generateWaterMesh(const int mapWidth, const int mapHeight) {
   waterMesh.indices.push_back(2);
   waterMesh.indices.push_back(1);
 
+  calculateNormals(&waterMesh);
+  calculateTangentVectors(&waterMesh);
+
   waterMesh.modelTransformation = glm::identity<glm::mat4>();
 
   glGenBuffers(1, &waterMesh.vboHandle);
@@ -350,20 +437,53 @@ static Mesh generateWaterMesh(const int mapWidth, const int mapHeight) {
 
   glBindBuffer(GL_ARRAY_BUFFER, waterMesh.vboHandle);
 
+  // Position
   glEnableVertexAttribArray(0);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), 0);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 15 * sizeof(float), 0);
 
+  // Normals
   glEnableVertexAttribArray(1);
-  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void *)(7 * sizeof(float)));
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 15 * sizeof(float), (void *)(4 * sizeof(float)));
+
+  // Tangent
+  glEnableVertexAttribArray(2);
+  glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 15 * sizeof(float), (void *)(7 * sizeof(float)));
+
+  // Bitangent
+  glEnableVertexAttribArray(3);
+  glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 15 * sizeof(float), (void *)(10 * sizeof(float)));
+
+  // Texture coordinates
+  glEnableVertexAttribArray(4);
+  glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, 15 * sizeof(float), (void *)(13 * sizeof(float)));
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, waterMesh.iboHandle);
 
   glBindVertexArray(0);
 
+  glGenTextures(2, waterMesh.textureHandles);
+
+  int dudvWidth, dudvHeight;
+  unsigned char *dudvPixelData = nullptr;
+  loadTexture("waterDuDv1.png", waterDuDvTexturePath, &dudvWidth, &dudvHeight, &dudvPixelData);
+  assert(dudvPixelData != nullptr);
+  createTexture2D(&waterMesh.textureHandles[0], GL_REPEAT, GL_LINEAR, dudvWidth, dudvHeight, GL_UNSIGNED_BYTE,
+                  dudvPixelData);
+  freeTexture(dudvPixelData);
+
+  int normalMapWidth, normalMapHeight;
+  unsigned char *normalMapPixelData = nullptr;
+  loadTexture("waterNormalMap1.png", waterNormalMapTexturePath, &normalMapWidth, &normalMapHeight,
+              &normalMapPixelData);
+  assert(normalMapPixelData != nullptr);
+  createTexture2D(&waterMesh.textureHandles[1], GL_REPEAT, GL_LINEAR, normalMapWidth, normalMapHeight,
+                  GL_UNSIGNED_BYTE, normalMapPixelData);
+  freeTexture(normalMapPixelData);
+
   return waterMesh;
 }
 
-MeshIdToMesh initSceneMeshes(const TerrainData &terrainData, const LightData &lightData) {
+MeshIdToMesh initSceneMeshes(const TerrainData &terrainData) {
   MeshIdToMesh meshIdToMesh;
   meshIdToMesh.reserve(4);
 
@@ -371,9 +491,8 @@ MeshIdToMesh initSceneMeshes(const TerrainData &terrainData, const LightData &li
 
   meshIdToMesh.emplace(kTerrainMeshId,
                        generateMeshFromHeightMap(terrainData.noiseMapData, terrainData.useFalloffMap,
-                                                 terrainData.terrainProperties));
-
-  meshIdToMesh.emplace(kLightMeshId, generateLightMesh(lightData));
+                                                 terrainData.terrainProperties.colors,
+                                                 terrainData.terrainProperties.heights));
 
   meshIdToMesh.emplace(kWaterMeshId,
                        generateWaterMesh(terrainData.noiseMapData.width, terrainData.noiseMapData.height));
@@ -381,13 +500,23 @@ MeshIdToMesh initSceneMeshes(const TerrainData &terrainData, const LightData &li
   return meshIdToMesh;
 }
 
+std::vector<Mesh> initLightMeshes(const LightData &lightData) {
+  std::vector<Mesh> lightMeshes;
+
+  for (size_t i = 0; i < lightData.lightCount; ++i) {
+    lightMeshes.push_back(generateLightMesh(lightData.positions[i]));
+  }
+
+  return lightMeshes;
+}
+
 void updateTerrainMeshTexture(Mesh *terrainMesh, const NoiseMapData &noiseMapData, const bool useFalloffMap,
-                              const std::vector<TerrainProperty> &terrainProperties) {
+                              const std::vector<glm::vec3> &colors, const std::vector<float> &heights) {
   const auto noiseMap = generateNoiseMap(noiseMapData, useFalloffMap);
   updateTexture2D(&terrainMesh->textureHandles[0], 0, 0, noiseMapData.width, noiseMapData.height, GL_FLOAT,
                   generateNoiseMapTexture(noiseMap).data());
   updateTexture2D(&terrainMesh->textureHandles[1], 0, 0, noiseMapData.width, noiseMapData.height, GL_FLOAT,
-                  generateColorMapTexture(noiseMap, terrainProperties).data());
+                  generateColorMapTexture(noiseMap, colors, heights).data());
 }
 
 void updateTerrainMeshWaterTextures(Mesh *terrainMesh, const std::string mapIndex) {

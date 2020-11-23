@@ -44,9 +44,9 @@ glm::mat4 Camera::createViewMatrix() {
   return _viewMatrix;
 }
 
-void Camera::yawRotation(GLfloat radian) { _cameraTargetSpherical.y += -radian; }
+void Camera::yawRotation(float radian) { _cameraTargetSpherical.y += -radian; }
 
-void Camera::pitchRotation(GLfloat radian) {
+void Camera::pitchRotation(float radian) {
   _cameraTargetSpherical.z =
       glm::clamp(_cameraTargetSpherical.z + radian, -glm::pi<float>() + kPitchTolerance, -kPitchTolerance);
 }
@@ -58,13 +58,13 @@ void Camera::invertPitch() {
 
 // The third row of the view matrix is the axis of the camera pointing
 // in its look direction. Add/subtract to move camera in that direction
-void Camera::moveForward(GLfloat moveSpeed) {
+void Camera::moveForward(float moveSpeed) {
   _cameraPositionCartesian.x -= (_viewMatrix[0][2] * moveSpeed);
   _cameraPositionCartesian.y -= (_viewMatrix[1][2] * moveSpeed);
   _cameraPositionCartesian.z -= (_viewMatrix[2][2] * moveSpeed);
 }
 
-void Camera::moveBackward(GLfloat moveSpeed) {
+void Camera::moveBackward(float moveSpeed) {
   _cameraPositionCartesian.x += (_viewMatrix[0][2] * moveSpeed);
   _cameraPositionCartesian.y += (_viewMatrix[1][2] * moveSpeed);
   _cameraPositionCartesian.z += (_viewMatrix[2][2] * moveSpeed);
@@ -72,13 +72,13 @@ void Camera::moveBackward(GLfloat moveSpeed) {
 
 // The first row of the view matrix is the axis of the camera pointing
 // in its right direction. Add/subtract to move camera in that direction
-void Camera::moveLeft(GLfloat moveSpeed) {
+void Camera::moveLeft(float moveSpeed) {
   _cameraPositionCartesian.x -= (_viewMatrix[0][0] * moveSpeed);
   _cameraPositionCartesian.y -= (_viewMatrix[1][0] * moveSpeed);
   _cameraPositionCartesian.z -= (_viewMatrix[2][0] * moveSpeed);
 }
 
-void Camera::moveRight(GLfloat moveSpeed) {
+void Camera::moveRight(float moveSpeed) {
   _cameraPositionCartesian.x += (_viewMatrix[0][0] * moveSpeed);
   _cameraPositionCartesian.y += (_viewMatrix[1][0] * moveSpeed);
   _cameraPositionCartesian.z += (_viewMatrix[2][0] * moveSpeed);
@@ -86,13 +86,13 @@ void Camera::moveRight(GLfloat moveSpeed) {
 
 // The second row of the view matrix is the axis of the camera pointing
 // in its up direction. Add/subtract to move camera in that direction
-void Camera::moveUp(GLfloat moveSpeed) {
+void Camera::moveUp(float moveSpeed) {
   _cameraPositionCartesian.x += (_viewMatrix[0][1] * moveSpeed);
   _cameraPositionCartesian.y += (_viewMatrix[1][1] * moveSpeed);
   _cameraPositionCartesian.z += (_viewMatrix[2][1] * moveSpeed);
 }
 
-void Camera::moveDown(GLfloat moveSpeed) {
+void Camera::moveDown(float moveSpeed) {
   _cameraPositionCartesian.x -= (_viewMatrix[0][1] * moveSpeed);
   _cameraPositionCartesian.y -= (_viewMatrix[1][1] * moveSpeed);
   _cameraPositionCartesian.z -= (_viewMatrix[2][1] * moveSpeed);

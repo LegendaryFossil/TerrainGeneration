@@ -7,55 +7,55 @@
 #include "lightDefs.h"
 #include "meshGenerator.h"
 
-constexpr auto baseSpeed = 100.0f;
+constexpr auto walkSpeed = 100.0f;
+//constexpr auto keyLookAroundSpeed = 10.0f;
+//constexpr auto radian = 0.017453293f;
 
 void handleCameraInput(Camera *camera, const ControlInputData &controlInputData, const double frameTime) {
-  GLfloat cameraSpeed = baseSpeed * float(frameTime);
-
-  GLfloat radian = 0.017453293f; // One radian
+  GLfloat cameraWalkSpeed = walkSpeed * float(frameTime);
+  // const auto cameraLookAroundSpeed = radian * keyLookAroundSpeed * float(frameTime);
 
   if (controlInputData.keyState[GLFW_KEY_W]) {
-    camera->moveForward(cameraSpeed);
+    camera->moveForward(cameraWalkSpeed);
   } else if (controlInputData.keyState[GLFW_KEY_S]) {
-    camera->moveBackward(cameraSpeed);
+    camera->moveBackward(cameraWalkSpeed);
   } else if (controlInputData.keyState[GLFW_KEY_A]) {
-    camera->moveLeft(cameraSpeed);
+    camera->moveLeft(cameraWalkSpeed);
   } else if (controlInputData.keyState[GLFW_KEY_D]) {
-    camera->moveRight(cameraSpeed);
+    camera->moveRight(cameraWalkSpeed);
   } else if (controlInputData.keyState[GLFW_KEY_Q]) {
-    camera->moveUp(cameraSpeed);
+    camera->moveUp(cameraWalkSpeed);
   } else if (controlInputData.keyState[GLFW_KEY_E]) {
-    camera->moveDown(cameraSpeed);
-  } else if (controlInputData.keyState[GLFW_KEY_J]) {
-    camera->yawRotation(-radian);
+    camera->moveDown(cameraWalkSpeed);
+  }/* else if (controlInputData.keyState[GLFW_KEY_J]) {
+    camera->yawRotation(-rot);
   } else if (controlInputData.keyState[GLFW_KEY_L]) {
-    camera->yawRotation(radian);
+    camera->yawRotation(rot);
   } else if (controlInputData.keyState[GLFW_KEY_I]) {
-    camera->pitchRotation(radian);
+    camera->pitchRotation(rot);
   } else if (controlInputData.keyState[GLFW_KEY_K]) {
-    camera->pitchRotation(-radian);
-  }
+    camera->pitchRotation(-rot);
+  }*/
 }
 
-void handleLightInput(Mesh *lightMesh, LightData *lightData, const ControlInputData &controlInputData,
+void handleLightInput(Mesh *lightMesh, glm::vec4 *lightPosition, const ControlInputData &controlInputData,
                       const double frameTime) {
-  GLfloat lightSpeed = baseSpeed * float(frameTime);
+  GLfloat lightSpeed = walkSpeed * float(frameTime);
 
   if (controlInputData.keyState[GLFW_KEY_W]) {
-    lightData->worldLightPosition.z -= lightSpeed;
+    lightPosition->z -= lightSpeed;
   } else if (controlInputData.keyState[GLFW_KEY_S]) {
-    lightData->worldLightPosition.z += lightSpeed;
+    lightPosition->z += lightSpeed;
   } else if (controlInputData.keyState[GLFW_KEY_A]) {
-    lightData->worldLightPosition.x -= lightSpeed;
+    lightPosition->x -= lightSpeed;
   } else if (controlInputData.keyState[GLFW_KEY_D]) {
-    lightData->worldLightPosition.x += lightSpeed;
+    lightPosition->x += lightSpeed;
   } else if (controlInputData.keyState[GLFW_KEY_Q]) {
-    lightData->worldLightPosition.y += lightSpeed;
+    lightPosition->y += lightSpeed;
   } else if (controlInputData.keyState[GLFW_KEY_E]) {
-    lightData->worldLightPosition.y -= lightSpeed;
+    lightPosition->y -= lightSpeed;
   }
 
-  lightMesh->modelTransformation =
-      glm::translate(glm::identity<glm::mat4>(), glm::vec3(lightData->worldLightPosition));
+  lightMesh->modelTransformation = glm::translate(glm::identity<glm::mat4>(), glm::vec3(*lightPosition));
   lightMesh->modelTransformation = glm::scale(lightMesh->modelTransformation, glm::vec3(5.0f));
 }

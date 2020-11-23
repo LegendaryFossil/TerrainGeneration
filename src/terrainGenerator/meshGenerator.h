@@ -20,6 +20,8 @@ struct Vertex {
   };
 
   glm::vec3 normal;
+  glm::vec3 tangent;
+  glm::vec3 bitangent;
   glm::vec2 textureCoordinate;
 };
 
@@ -37,13 +39,13 @@ struct Mesh {
 
 constexpr auto kSkyboxMeshId = "skybox";
 constexpr auto kTerrainMeshId = "terrain";
-constexpr auto kLightMeshId = "light";
 constexpr auto kWaterMeshId = "water";
 
 using MeshIdToMesh = std::unordered_map<std::string, Mesh>;
 
-MeshIdToMesh initSceneMeshes(const TerrainData &terrainData, const LightData &lightData);
+MeshIdToMesh initSceneMeshes(const TerrainData &terrainData);
+std::vector<Mesh> initLightMeshes(const LightData &lightData);
 
 void updateTerrainMeshTexture(Mesh *terrainMesh, const NoiseMapData &noiseMapData, const bool useFalloffMap,
-                              const std::vector<TerrainProperty> &terrainProperties);
+                              const std::vector<glm::vec3> &colors, const std::vector<float> &heights);
 void updateTerrainMeshWaterTextures(Mesh *terrainMesh, const std::string mapIndex);

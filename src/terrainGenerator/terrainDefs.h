@@ -5,38 +5,32 @@
 #include "noiseMapGenerator.h"
 #include <string>
 
-constexpr auto PATCH_SIZE = 64.0f;
-
-constexpr auto kWaterIndex = 0;
-constexpr auto kShallowWaterIndex = 1;
-constexpr auto kSandIndex = 2;
-constexpr auto kGrassIndex = 3;
-// constexpr auto kRockIndex = 4;
-constexpr auto kMountainIndex = 4;
-constexpr auto kSnowIndex = 5;
-
-struct TerrainProperty {
-  std::string name;
-  glm::vec3 color;
-  float height;
-};
+constexpr auto kPatchSize = 64.0f;
 
 // Terrain
 struct TerrainData {
   NoiseMapData noiseMapData = {}; // Noise map settings to alter terrain
-  std::vector<TerrainProperty> terrainProperties;
+
+  struct {
+    std::vector<std::string> names;
+    std::vector<glm::vec3> colors;
+    std::vector<float> colorStrengths;
+    std::vector<float> heights;
+    std::vector<float> blends;
+    std::vector<float> textureScalings;
+  } terrainProperties;
+
   float gridPointSpacing = 1.0f; // Terrain scaling
-  float heightMultiplier = 65.0f;
+  float heightMultiplier = 103.0f;
 
-  float waterDistortionMoveFactor = 0.0f;
-  float waterDistortionSpeed = 0.05f;
+  int pixelsPerTriangle = 10; // How many pixels for triangle in patch edge for dynamic LOD
 
-  int pixelsPerTriangle = 20; // How many pixels for triangle in patch edge for dynamic LOD
+  int terrainCount;
 
   bool useFalloffMap = true;
 };
 
-inline TerrainData getDefaultTerrainData() {
+inline TerrainData initDefaultTerrainData() {
   const int mapSize = 512;
   // Only allow power of two
   assert(mapSize && !(mapSize & (mapSize - 1)));
@@ -51,13 +45,56 @@ inline TerrainData getDefaultTerrainData() {
   terrainData.noiseMapData.seed = 1;
   terrainData.noiseMapData.octaveOffset = glm::vec2(0.0f, 444.0f);
 
-  terrainData.terrainProperties.reserve(3);
-  terrainData.terrainProperties.push_back({"Water", glm::vec3(0.0f, 0.0f, 1.0f), 0.0f});
-  terrainData.terrainProperties.push_back({"Shallow water", glm::vec3(0.42f, 0.61f, 0.94f), 0.020f});
-  terrainData.terrainProperties.push_back({"Sand", glm::vec3(1.0f, 1.0f, 0.45f), 0.067f});
-  terrainData.terrainProperties.push_back({"Grass", glm::vec3(0.0f, 1.0f, 0.0f), 0.392f});
-  terrainData.terrainProperties.push_back({"Mountain", glm::vec3(0.43f, 0.227f, 0.03f), 0.686f});
-  terrainData.terrainProperties.push_back({"Snow", glm::vec3(1.0f, 1.0f, 1.0f), 1.0f});
+  terrainData.terrainProperties.names.push_back("Water");
+  terrainData.terrainProperties.colors.push_back(glm::vec3(0.02f, 0.33f, 0.49f));
+  terrainData.terrainProperties.colorStrengths.push_back(0.495f);
+  terrainData.terrainProperties.heights.push_back(0.0f);
+  terrainData.terrainProperties.blends.push_back(0.015f);
+  terrainData.terrainProperties.textureScalings.push_back(60.825f);
+
+  terrainData.terrainProperties.names.push_back("Sand");
+  terrainData.terrainProperties.colors.push_back(glm::vec3(0.9f, 0.9f, 0.059f));
+  terrainData.terrainProperties.heights.push_back(0.005f);
+  terrainData.terrainProperties.colorStrengths.push_back(0.320f);
+  terrainData.terrainProperties.blends.push_back(0.015f);
+  terrainData.terrainProperties.textureScalings.push_back(61.649f);
+
+  terrainData.terrainProperties.names.push_back("Grass");
+  terrainData.terrainProperties.colors.push_back(glm::vec3(0.0f, 1.0f, 0.0f));
+  terrainData.terrainProperties.heights.push_back(0.021f);
+  terrainData.terrainProperties.colorStrengths.push_back(0.160f);
+  terrainData.terrainProperties.blends.push_back(0.041f);
+  terrainData.terrainProperties.textureScalings.push_back(56.289f);
+
+  terrainData.terrainProperties.names.push_back("Rock");
+  terrainData.terrainProperties.colors.push_back(glm::vec3(0.13f, 0.105f, 0.105f));
+  terrainData.terrainProperties.heights.push_back(0.139f);
+  terrainData.terrainProperties.colorStrengths.push_back(0.381f);
+  terrainData.terrainProperties.blends.push_back(0.149f);
+  terrainData.terrainProperties.textureScalings.push_back(25.0f);
+
+  terrainData.terrainProperties.names.push_back("Mountain");
+  terrainData.terrainProperties.colors.push_back(glm::vec3(0.113f, 0.105f, 0.098f));
+  terrainData.terrainProperties.heights.push_back(0.325f);
+  terrainData.terrainProperties.colorStrengths.push_back(0.572f);
+  terrainData.terrainProperties.blends.push_back(0.191f);
+  terrainData.terrainProperties.textureScalings.push_back(41.0f);
+
+  terrainData.terrainProperties.names.push_back("Snow");
+  terrainData.terrainProperties.colors.push_back(glm::vec3(0.66f, 0.66f, 0.66f));
+  terrainData.terrainProperties.heights.push_back(0.881f);
+  terrainData.terrainProperties.colorStrengths.push_back(0.361f);
+  terrainData.terrainProperties.blends.push_back(0.088f);
+  terrainData.terrainProperties.textureScalings.push_back(87.0f);
+
+  terrainData.terrainCount = int(terrainData.terrainProperties.colors.size());
+
+  assert(terrainData.terrainProperties.names.size() == terrainData.terrainCount);
+  assert(terrainData.terrainProperties.colors.size() == terrainData.terrainCount);
+  assert(terrainData.terrainProperties.colorStrengths.size() == terrainData.terrainCount);
+  assert(terrainData.terrainProperties.heights.size() == terrainData.terrainCount);
+  assert(terrainData.terrainProperties.blends.size() == terrainData.terrainCount);
+  assert(terrainData.terrainProperties.textureScalings.size() == terrainData.terrainCount);
 
   return terrainData;
 }

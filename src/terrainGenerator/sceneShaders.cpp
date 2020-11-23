@@ -41,30 +41,36 @@ SceneProgramObjects initSceneShaders(const WindowData &windowData, const SceneDa
           .emplace(kTerrainGeneratorProgramObjectName, createProgramObject(terrainGeneratorShaderObjects))
           .first->second;
 
-  setUniform(terrainGeneratorProgramObject, ufAmbientConstantName, sceneData.lightData.ambientConstant);
   setUniform(terrainGeneratorProgramObject, ufHeightMapTextureName, 0);
   setUniform(terrainGeneratorProgramObject, ufColorMapTextureName, 1);
   setUniform(terrainGeneratorProgramObject, ufFalloffMapTextureName, 2);
-  setUniform(terrainGeneratorProgramObject, ufSceneTextureName, 3);
-  setUniform(terrainGeneratorProgramObject, ufDuDvTextureName, 4);
-  setUniform(terrainGeneratorProgramObject, ufNormalMapTextureName, 5);
-  setUniform(terrainGeneratorProgramObject, ufPatchSizeName, PATCH_SIZE);
+
+  setUniform(terrainGeneratorProgramObject, ufPatchSizeName, kPatchSize);
   setUniform(terrainGeneratorProgramObject, ufTerrainGridPointSpacingName,
              sceneData.terrainData.gridPointSpacing);
   setUniform(terrainGeneratorProgramObject, ufHeightMultiplierName, sceneData.terrainData.heightMultiplier);
   setUniform(terrainGeneratorProgramObject, ufPixelsPerTriangleName, sceneData.terrainData.pixelsPerTriangle);
+
   setUniform(terrainGeneratorProgramObject, ufViewportSizeName,
              glm::vec2(windowData.width, windowData.height));
-  setUniform(terrainGeneratorProgramObject, ufHorizontalClipPlane, glm ::vec4(0.0f, 1.0f, 0.0f, 0.412f));
-  setUniform(terrainGeneratorProgramObject, ufWorldLightPositionName, sceneData.lightData.worldLightPosition);
-  setUniform(terrainGeneratorProgramObject, ufSpecularLightReflectionName,
-             sceneData.lightData.specularData.reflection);
-  setUniform(terrainGeneratorProgramObject, ufSpecularLightIntensityName,
-             sceneData.lightData.specularData.intensity);
-  setUniform(terrainGeneratorProgramObject, ufShineDamper, sceneData.lightData.specularData.shineDamper);
+  setUniform(terrainGeneratorProgramObject, ufHorizontalClipPlane, glm ::vec4(0.0f, 1.0f, 0.0f, -0.35f));
 
-  setUniform(terrainGeneratorProgramObject, ufWater,
-             sceneData.terrainData.terrainProperties[kWaterIndex].color);
+  setUniform(terrainGeneratorProgramObject, ufLightCount, sceneData.lightData.lightCount);
+  setUniform(terrainGeneratorProgramObject, ufLightColorsName, sceneData.lightData.colors);
+  setUniform(terrainGeneratorProgramObject, ufWorldLightPositionsName, sceneData.lightData.positions);
+
+  setUniform(terrainGeneratorProgramObject, ufAmbientConstantName, ambientConstant);
+
+  setUniform(terrainGeneratorProgramObject, ufTerrainTextures, 3);
+  setUniform(terrainGeneratorProgramObject, ufTerrainCount, sceneData.terrainData.terrainCount);
+  setUniform(terrainGeneratorProgramObject, ufTerrainColors,
+             sceneData.terrainData.terrainProperties.textureScalings);
+  setUniform(terrainGeneratorProgramObject, ufTerrainColors, sceneData.terrainData.terrainProperties.colors);
+  setUniform(terrainGeneratorProgramObject, ufTerrainColorStrengths,
+             sceneData.terrainData.terrainProperties.colorStrengths);
+  setUniform(terrainGeneratorProgramObject, ufTerrainHeights,
+             sceneData.terrainData.terrainProperties.heights);
+  setUniform(terrainGeneratorProgramObject, ufTerrainBlends, sceneData.terrainData.terrainProperties.blends);
 
   // Terrain noise/color/falloff map shader
   std::vector<GLuint> terrainGeneratorDebugShaderObjects;
@@ -90,7 +96,25 @@ SceneProgramObjects initSceneShaders(const WindowData &windowData, const SceneDa
   const auto waterProgramObject =
       programObjects.emplace(kWaterProgramObjectName, createProgramObject(waterShaderObjects)).first->second;
 
-  setUniform(waterProgramObject, ufSceneTextureName, 0);
+  setUniform(waterProgramObject, ufTerrainGridPointSpacingName, sceneData.terrainData.gridPointSpacing);
+
+  setUniform(waterProgramObject, ufDuDvTextureName, 0);
+  setUniform(waterProgramObject, ufNormalMapTextureName, 1);
+  setUniform(waterProgramObject, ufSceneTextureName, 2);
+
+  setUniform(waterProgramObject, ufWaterDistortionMoveFactorName,
+             sceneData.waterData.waterDistortionMoveFactor);
+  setUniform(waterProgramObject, ufWaterColor,
+             sceneData.terrainData.terrainProperties.colors[0]); // [0] = Water
+
+  setUniform(waterProgramObject, ufLightCount, sceneData.lightData.lightCount);
+  setUniform(waterProgramObject, ufWorldLightPositionsName, sceneData.lightData.positions);
+  setUniform(waterProgramObject, ufLightColorsName, sceneData.lightData.colors);
+  setUniform(waterProgramObject, ufSpecularLightColorsName, sceneData.lightData.specularData.colors);
+  setUniform(waterProgramObject, ufSpecularLightIntensitiesName,
+             sceneData.lightData.specularData.intensities);
+  setUniform(waterProgramObject, ufSpecularPowers, sceneData.lightData.specularData.powers);
+  setUniform(waterProgramObject, ufReflectionStrength, sceneData.lightData.reflectionStrength);
 
   return programObjects;
 }

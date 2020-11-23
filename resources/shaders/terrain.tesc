@@ -43,12 +43,12 @@ float screenSphereDiameterPixels(const vec4 p1, const vec4 p2) {
 	return clamp(sphereRadiusPixels / pixelsPerTriangle, 1.0, patchSize);
 }
 
-const float frustumTolerance = 0.0001;
+const float eps = 0.0001;
 bool patchEdgeInFrustum(const vec4 p1, const vec4 p2) {
-	if((p1.x >= (-p1.w - frustumTolerance) || p2.x >= (-p2.w - frustumTolerance)) &&
-		(p1.x <= (p1.w + frustumTolerance) || p2.x <= (p2.w + frustumTolerance)) &&
-		(p1.z >= (-p1.w - frustumTolerance) || p2.z >= (-p2.w - frustumTolerance)) &&
-		(p1.z <= (p1.w + frustumTolerance) || p2.z <= (p2.w + frustumTolerance))) {
+	if((p1.x >= (-p1.w - eps) || p2.x >= (-p2.w - eps)) &&
+		(p1.x <= (p1.w + eps) || p2.x <= (p2.w + eps)) &&
+		(p1.z >= (-p1.w - eps) || p2.z >= (-p2.w - eps)) &&
+		(p1.z <= (p1.w + eps) || p2.z <= (p2.w + eps))) {
 		return true;
 	}
 	return false;
