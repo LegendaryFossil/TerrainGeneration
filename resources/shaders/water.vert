@@ -5,6 +5,8 @@ uniform mat4 worldToViewMatrix;
 uniform mat4 viewToClipMatrix;
 uniform mat3 normalMatrix;
 
+uniform vec3 worldCameraPosition;
+
 uniform int lightCount;
 uniform vec4 worldLightPositions[2];
 
@@ -16,6 +18,7 @@ layout(location = 4) in vec2 texCoord;
 
 out vec2 texCoordV;
 out vec3 tangentLightPositionsV[2];
+out vec3 tangentCameraPositionV;
 out vec3 tangentPositionV;
 out vec4 clipPositionV;
 
@@ -23,20 +26,24 @@ mat3 createTBNMatrix(const vec3 T, const vec3 B, const vec3 N) {
    vec3 viewT = normalize(normalMatrix * T);
    vec3 viewB = normalize(normalMatrix * B);
    vec3 viewN = normalize(normalMatrix * N);
-   return mat3(T, B, N);
+   return mat3(viewT, viewB, viewN);
 }
 
 void main() {
 	const mat3 invTBNMatrix = transpose(createTBNMatrix(tangent, bitangent, normal));
 
 	for(int i = 0; i < lightCount; ++i) {
-		tangentLightPositionsV[i] =  invTBNMatrix * worldLightPositions[i].xyz;
+		vec4 viewLightPosition = worldToViewMatrix * worldLightPositions[i];
+		tangentLightPositionsV[i] =  invTBNMatrix * viewLightPosition.xyz;
 	}
 
-	vec4 worldPosition = modelToWorldMatrix * vec4(position, 1.0);
-	tangentPositionV = invTBNMatrix * worldPosition.xyz;
+	vec3 viewCameraPosition = (worldToViewMatrix * vec4(worldCameraPosition, 1.0)).xyz;
+	tangentCameraPositionV = invTBNMatrix * viewCameraPosition;
 
-	clipPositionV = viewToClipMatrix * worldToViewMatrix * worldPosition;
+	vec4 viewPosition = worldToViewMatrix * modelToWorldMatrix * vec4(position, 1.0);
+	tangentPositionV = invTBNMatrix * viewPosition.xyz;
+
+	clipPositionV = viewToClipMatrix * viewPosition;
 	texCoordV = texCoord;
 
 	gl_Position = clipPositionV;

@@ -171,6 +171,8 @@ void renderWater(const Mesh &waterMesh, const SceneData &sceneData, const unsign
   setUniform(waterProgramObject, ufWaterColor,
              sceneData.terrainData.terrainProperties.colors[0]); // [0] = Water;
 
+  setUniform(waterProgramObject, ufWorldCameraPosition, sceneData.fpsCamera.cameraPosition());
+
   setUniform(waterProgramObject, ufWorldLightPositionsName, sceneData.lightData.positions);
   setUniform(waterProgramObject, ufLightColorsName, sceneData.lightData.colors);
   setUniform(waterProgramObject, ufSpecularLightColorsName, sceneData.lightData.specularData.colors);

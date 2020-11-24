@@ -67,7 +67,7 @@ void main() {
 	// Reinterval normal so that it always points in the positive y-axis but can point in the positive or
 	// negative direction in the xz-plane
 	const vec3 normalMapValue = texture(normalMapTexture, distortionTexCoord).rgb;
-	const vec3 waterNormal = normalize(vec3(normalMapValue.r * 2.0 - 1.0, normalMapValue.b * 3.0, normalMapValue.g * 2.0 - 1.0));
+	const vec3 waterNormal = normalize(vec3(normalMapValue.r * 2.0 - 1.0, normalMapValue.g * 2.0 - 1.0,  normalMapValue.b * 3.0));
 
 	const vec3 viewDirection = normalize(-tangentPositionV);
 	vec3 reflectionColor = getReflectionColor(clipPositionV, distortionTexCoord, viewDirection, waterNormal);

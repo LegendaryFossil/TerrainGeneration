@@ -43,4 +43,6 @@ constexpr auto ufTerrainTextureScalings = "terrainTextureScalings";
 constexpr auto ufWaterDistortionMoveFactorName = "waterDistortionMoveFactor";
 constexpr auto ufWaterColor = "waterColor";
 
+constexpr auto ufWorldCameraPosition = "worldCameraPosition";
+
 constexpr auto ufDebugSettings = "debugSettings";
