@@ -1,5 +1,7 @@
 # Procedural Terrain Generation
 
+![alt text](Preview.png)
+
 Inspired by [Sebastian Lague's video series on how to develop a procedural landmass generator](https://youtu.be/wbpMiKiSKm8) in Unity I developed a terrain generator in C++. Frameworks/APIs include OpenGL (rendering), GLSL (shader programming) 
 GLFW (window handling) and Dear ImGui (GUI-interaction). In addition to the procedural generation dynamic level-of-detail (LOD), terrain texturing, water simulation, water reflection 
 and a lightning model supporting multiple lights have been implemented. Most of the features have one or several modifiable properties in the GUI to get different results (see **Usage** section). 
