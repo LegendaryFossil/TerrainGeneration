@@ -96,6 +96,8 @@ A video below demonstrates some of these features
 - Soft edges between water and wet sand, at the moment the edge of the sand is very clear.
 - Terrain collision detection when moving around with the camera.
 - Fog system
+- Shadows
+- Water refraction
 - Details to the terrain textures. Although the persistance and lacunarity can be used to give more details it can still look quite flat from certain viewpoints. Using techniques like bump mapping (similar to the water) or parallax mapping can give more depth and details to the terrain.
 
 ### References
