@@ -115,6 +115,7 @@ SceneProgramObjects initSceneShaders(const WindowData &windowData, const SceneDa
              sceneData.lightData.specularData.intensities);
   setUniform(waterProgramObject, ufSpecularPowers, sceneData.lightData.specularData.powers);
   setUniform(waterProgramObject, ufReflectionStrength, sceneData.lightData.reflectionStrength);
+  setUniform(waterProgramObject, ufWorldCameraPosition, sceneData.fpsCamera.cameraPosition());
 
   return programObjects;
 }

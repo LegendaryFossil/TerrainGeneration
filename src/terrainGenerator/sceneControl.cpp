@@ -9,7 +9,7 @@
 
 constexpr auto walkSpeed = 100.0f;
 //constexpr auto keyLookAroundSpeed = 10.0f;
-//constexpr auto radian = 0.017453293f;
+constexpr auto radian = 0.017453293f;
 
 void handleCameraInput(Camera *camera, const ControlInputData &controlInputData, const double frameTime) {
   GLfloat cameraWalkSpeed = walkSpeed * float(frameTime);
@@ -27,14 +27,14 @@ void handleCameraInput(Camera *camera, const ControlInputData &controlInputData,
     camera->moveUp(cameraWalkSpeed);
   } else if (controlInputData.keyState[GLFW_KEY_E]) {
     camera->moveDown(cameraWalkSpeed);
-  }/* else if (controlInputData.keyState[GLFW_KEY_J]) {
-    camera->yawRotation(-rot);
+  } /*else if (controlInputData.keyState[GLFW_KEY_J]) {
+    camera->yawRotation(-radian);
   } else if (controlInputData.keyState[GLFW_KEY_L]) {
-    camera->yawRotation(rot);
+    camera->yawRotation(radian);
   } else if (controlInputData.keyState[GLFW_KEY_I]) {
-    camera->pitchRotation(rot);
+    camera->pitchRotation(radian);
   } else if (controlInputData.keyState[GLFW_KEY_K]) {
-    camera->pitchRotation(-rot);
+    camera->pitchRotation(-radian);
   }*/
 }
 

@@ -10,9 +10,6 @@ struct LightData {
   std::vector<glm::vec4> positions;
   std::vector<glm::vec3> colors;
 
-  // glm::vec4 position = glm::vec4(64.0f, 577.0f, 360.0f, 1.0f);
-  // glm::vec4 position = glm::vec4(396.0f, 193.0f, -11.0f, 1.0f);
-
   struct {
     std::vector<glm::vec3> colors;
     std::vector<float> intensities;
