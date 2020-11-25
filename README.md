@@ -56,7 +56,8 @@ The program use a first person camera to navigate in the scene. Keys are followi
 
 **Mouse movement** = Aim
 
-Note that when the GUI is shown the camera navigation is turned off.
+Note that when the GUI is shown the camera navigation is turned off. Also when using remote desktop GLFW seems to have a weird bug with how it captures
+the virtual mouse position so the aim will not work. It is recommended to run this locally.
 
 ### GUI settings
 
