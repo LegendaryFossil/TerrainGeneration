@@ -42,8 +42,7 @@ SceneProgramObjects initSceneShaders(const WindowData &windowData, const SceneDa
           .first->second;
 
   setUniform(terrainGeneratorProgramObject, ufHeightMapTextureName, 0);
-  setUniform(terrainGeneratorProgramObject, ufColorMapTextureName, 1);
-  setUniform(terrainGeneratorProgramObject, ufFalloffMapTextureName, 2);
+  setUniform(terrainGeneratorProgramObject, ufFalloffMapTextureName, 1);
 
   setUniform(terrainGeneratorProgramObject, ufPatchSizeName, kPatchSize);
   setUniform(terrainGeneratorProgramObject, ufTerrainGridPointSpacingName,
@@ -61,9 +60,9 @@ SceneProgramObjects initSceneShaders(const WindowData &windowData, const SceneDa
 
   setUniform(terrainGeneratorProgramObject, ufAmbientConstantName, ambientConstant);
 
-  setUniform(terrainGeneratorProgramObject, ufTerrainTextures, 3);
+  setUniform(terrainGeneratorProgramObject, ufTerrainTextures, 2);
   setUniform(terrainGeneratorProgramObject, ufTerrainCount, sceneData.terrainData.terrainCount);
-  setUniform(terrainGeneratorProgramObject, ufTerrainColors,
+  setUniform(terrainGeneratorProgramObject, ufTerrainTextureScalings,
              sceneData.terrainData.terrainProperties.textureScalings);
   setUniform(terrainGeneratorProgramObject, ufTerrainColors, sceneData.terrainData.terrainProperties.colors);
   setUniform(terrainGeneratorProgramObject, ufTerrainColorStrengths,
@@ -72,7 +71,7 @@ SceneProgramObjects initSceneShaders(const WindowData &windowData, const SceneDa
              sceneData.terrainData.terrainProperties.heights);
   setUniform(terrainGeneratorProgramObject, ufTerrainBlends, sceneData.terrainData.terrainProperties.blends);
 
-  // Terrain noise/color/falloff map shader
+  // Terrain noise/falloff map shader
   std::vector<GLuint> terrainGeneratorDebugShaderObjects;
   terrainGeneratorDebugShaderObjects.push_back(compileShader("terrain.vert", GL_VERTEX_SHADER));
   terrainGeneratorDebugShaderObjects.push_back(compileShader("terrainDebug.tesc", GL_TESS_CONTROL_SHADER));
@@ -86,8 +85,7 @@ SceneProgramObjects initSceneShaders(const WindowData &windowData, const SceneDa
 
   setUniform(terrainGeneratorDebugProgramObject, ufDebugSettings, glm::vec3(1.0f, 0.0f, 0.0f));
   setUniform(terrainGeneratorDebugProgramObject, ufHeightMapTextureName, 0);
-  setUniform(terrainGeneratorDebugProgramObject, ufColorMapTextureName, 1);
-  setUniform(terrainGeneratorDebugProgramObject, ufFalloffMapTextureName, 2);
+  setUniform(terrainGeneratorDebugProgramObject, ufFalloffMapTextureName, 1);
 
   // Water shader
   std::vector<GLuint> waterShaderObjects;
@@ -116,6 +114,16 @@ SceneProgramObjects initSceneShaders(const WindowData &windowData, const SceneDa
   setUniform(waterProgramObject, ufSpecularPowers, sceneData.lightData.specularData.powers);
   setUniform(waterProgramObject, ufReflectionStrength, sceneData.lightData.reflectionStrength);
   setUniform(waterProgramObject, ufWorldCameraPosition, sceneData.fpsCamera.cameraPosition());
+
+  // Water debug shader
+  std::vector<GLuint> waterDebugShaderObjects;
+  waterDebugShaderObjects.push_back(compileShader("waterDebug.vert", GL_VERTEX_SHADER));
+  waterDebugShaderObjects.push_back(compileShader("waterDebug.frag", GL_FRAGMENT_SHADER));
+  const auto waterDebugProgramObject =
+      programObjects.emplace(kWaterDebugProgramObjectName, createProgramObject(waterDebugShaderObjects)).first->second;
+
+  setUniform(waterDebugProgramObject, ufWaterColor,
+             sceneData.terrainData.terrainProperties.colors[0]); // [0] = Water
 
   return programObjects;
 }

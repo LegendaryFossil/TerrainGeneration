@@ -90,26 +90,3 @@ std::vector<glm::vec3> generateNoiseMapTexture(const NoiseMap &noiseMap) {
 
   return noiseMapTextureData;
 }
-
-std::vector<glm::vec3> generateColorMapTexture(const NoiseMap &noiseMap, const std::vector<glm::vec3> &colors,
-                                               const std::vector<float> &heights) {
-  const auto mapHeight = noiseMap.size();
-  const auto mapWidth = noiseMap.front().size();
-
-  std::vector<glm::vec3> colorMapTextureData;
-  colorMapTextureData.reserve(mapHeight * mapWidth);
-  for (size_t i = 0, i_size = mapHeight; i < i_size; ++i) {
-    for (size_t j = 0, j_size = mapWidth; j < j_size; ++j) {
-      const float height = noiseMap[i][j];
-      colorMapTextureData.push_back(glm::vec3(0.0f));
-      for (size_t k = 0; k < colors.size(); ++k) {
-        if (height <= heights[k]) {
-          colorMapTextureData.back() = colors[k];
-          break;
-        }
-      }
-    }
-  }
-
-  return colorMapTextureData;
-}

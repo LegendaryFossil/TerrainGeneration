@@ -143,12 +143,10 @@ static Mesh generateMeshFromHeightMap(const NoiseMapData &noiseMapData, const bo
 
   glBindVertexArray(0);
 
-  glGenTextures(4, terrainMesh.textureHandles);
+  glGenTextures(3, terrainMesh.textureHandles);
   createTexture2D(&terrainMesh.textureHandles[0], GL_CLAMP_TO_EDGE, GL_NEAREST, noiseMapData.width,
                   noiseMapData.height, GL_FLOAT, generateNoiseMapTexture(noiseMap).data());
   createTexture2D(&terrainMesh.textureHandles[1], GL_CLAMP_TO_EDGE, GL_NEAREST, noiseMapData.width,
-                  noiseMapData.height, GL_FLOAT, generateColorMapTexture(noiseMap, colors, heights).data());
-  createTexture2D(&terrainMesh.textureHandles[2], GL_CLAMP_TO_EDGE, GL_NEAREST, noiseMapData.width,
                   noiseMapData.height, GL_FLOAT, generateFalloffMap(noiseMapData.width).data());
 
   std::vector<unsigned char *> terrainTexturesPixelData;
@@ -193,7 +191,7 @@ static Mesh generateMeshFromHeightMap(const NoiseMapData &noiseMapData, const bo
                                  expectedTerrainTextureDimension, expectedTerrainTextureDimension);
   terrainTexturesPixelData.push_back(terrainTexturePixelData);
 
-  createTexture2DArray(&terrainMesh.textureHandles[3], GL_REPEAT, GL_NEAREST, terrainTextureWidth,
+  createTexture2DArray(&terrainMesh.textureHandles[2], GL_REPEAT, GL_NEAREST, terrainTextureWidth,
                        terrainTextureHeight, GL_UNSIGNED_BYTE, terrainTexturesPixelData);
 
   for (auto pixelData : terrainTexturesPixelData) {
@@ -515,8 +513,6 @@ void updateTerrainMeshTexture(Mesh *terrainMesh, const NoiseMapData &noiseMapDat
   const auto noiseMap = generateNoiseMap(noiseMapData, useFalloffMap);
   updateTexture2D(&terrainMesh->textureHandles[0], 0, 0, noiseMapData.width, noiseMapData.height, GL_FLOAT,
                   generateNoiseMapTexture(noiseMap).data());
-  updateTexture2D(&terrainMesh->textureHandles[1], 0, 0, noiseMapData.width, noiseMapData.height, GL_FLOAT,
-                  generateColorMapTexture(noiseMap, colors, heights).data());
 }
 
 void updateTerrainMeshWaterTextures(Mesh *waterMesh, const std::string mapIndex) {

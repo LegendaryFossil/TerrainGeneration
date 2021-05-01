@@ -11,6 +11,7 @@ uniform mat4 viewToClipMatrix;
 in vec2 positionTC[];
 
 out vec2 uvTE;
+out vec3 worldPositionTE; // World vertex position
 
 void main(){
 	ivec2 texSize = textureSize(heightMapTexture, 0);
@@ -21,12 +22,15 @@ void main(){
 	uvTE = positionTC[0].xy + gl_TessCoord.st / div;
 	
 	// Compute vertex positions [0, 1] -> [0, texSize]
-	vec4 res;
-	res.xz = uvTE.st * texSize;
-	res.y = 1.0;
-	res.w = 1.0;
+	vec4 vertex;
+	vertex.xz = uvTE.st * texSize;
+	vertex.y = 1.0;
+	vertex.w = 1.0;
 
-	vec4 viewPosition = worldToViewMatrix * modelToWorldMatrix * res;
+	vec4 worldPosition = modelToWorldMatrix * vertex;
+	worldPositionTE = worldPosition.xyz;
+
+	vec4 viewPosition = worldToViewMatrix * modelToWorldMatrix * vertex;
 	gl_Position = viewToClipMatrix * viewPosition;
 }
 
