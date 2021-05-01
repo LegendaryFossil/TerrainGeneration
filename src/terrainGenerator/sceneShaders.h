@@ -13,6 +13,7 @@ constexpr auto kLightShaderProgramObjectName = "light";
 constexpr auto kTerrainGeneratorProgramObjectName = "terrainGenerator";
 constexpr auto kTerrainGeneratorDebugProgramObjectName = "terrainGeneratorDebug";
 constexpr auto kWaterProgramObjectName = "water";
+constexpr auto kWaterDebugProgramObjectName = "waterDebug";
 
 using SceneProgramObjects = std::unordered_map<std::string, GLuint>;
 

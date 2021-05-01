@@ -30,6 +30,3 @@ void updateTexture2D(GLuint *texHandle, const int offsetX, const int offsetY, co
                      const int height, GLenum dataType, const void *pixels);
 
 std::vector<glm::vec3> generateNoiseMapTexture(const NoiseMap &noiseMap);
-
-std::vector<glm::vec3> generateColorMapTexture(const NoiseMap &noiseMap, const std::vector<glm::vec3> &colors,
-                                               const std::vector<float> &heights);

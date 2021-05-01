@@ -8,12 +8,13 @@
 struct Mesh;
 struct WindowData;
 struct SceneData;
+struct TerrainData;
 
 void renderNoiseMap(const Mesh &terrainMesh, const glm::mat4 &viewMatrix, const glm::mat4 &viewToClipMatrix,
                     const GLuint terrainGeneratorDebugProgramObject);
 
-void renderColorMap(const Mesh &terrainMesh, const glm::mat4 &viewMatrix, const glm::mat4 &viewToClipMatrix,
-                    const GLuint terrainGeneratorDebugProgramObject);
+void renderColorMap(const WindowData &windowData, const SceneData &sceneData, const glm::mat4 &viewMatrix,
+                    const glm::mat4 &viewToClipMatrix, const SceneProgramObjects &sceneProgramObjects);
 
 void renderFalloffMap(const Mesh &terrainMesh, const glm::mat4 &viewMatrix, const glm::mat4 &viewToClipMatrix,
                       const GLuint terrainGeneratorDebugProgramObject);
@@ -26,10 +27,10 @@ void renderWater(const Mesh &waterMesh, const SceneData &sceneData, const unsign
                  const unsigned int frameBufferHeight, const glm::mat4 &viewMatrix,
                  const glm::mat4 &viewToClipMatrix, const GLuint waterProgramObject);
 
-void renderTerrainReflectionTexture(const SceneData &sceneData, const glm::mat4 &viewMatrix,
+void renderSceneReflectionTexture(const SceneData &sceneData, const glm::mat4 &viewMatrix,
                                     const glm::mat4 &viewToClipMatrix,
                                     const SceneProgramObjects &sceneProgramObjects);
 
-void renderTerrain(const WindowData &windowData, const SceneData &sceneData, const glm::mat4 &viewMatrix,
+void renderScene(const WindowData &windowData, const SceneData &sceneData, const glm::mat4 &viewMatrix,
                    const glm::mat4 &viewToClipMatrix, const bool isWireFrame,
                    const SceneProgramObjects &sceneProgramObjects);

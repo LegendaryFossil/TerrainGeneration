@@ -23,7 +23,6 @@ uniform vec3 lightColors[2];
 uniform vec3 ambientConstant;
 
 uniform sampler2D heightMapTexture;
-uniform sampler2D colorMapTexture;
 uniform sampler2DArray terrainTextures;
 
 uniform float terrainGridPointSpacing;

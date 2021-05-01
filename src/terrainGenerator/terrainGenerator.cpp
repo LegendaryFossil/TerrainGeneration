@@ -191,8 +191,8 @@ void renderScene() {
                    viewToClipMatrix, sceneProgramObjects.at(kTerrainGeneratorDebugProgramObjectName));
     break;
   case SceneSettings::RENDER_MODE::COLOR_MAP:
-    renderColorMap(sceneData.meshIdToMesh.at(kTerrainMeshId), sceneData.fpsCamera.createViewMatrix(),
-                   viewToClipMatrix, sceneProgramObjects.at(kTerrainGeneratorDebugProgramObjectName));
+    renderColorMap(windowData, sceneData, sceneData.fpsCamera.createViewMatrix(), viewToClipMatrix,
+                   sceneProgramObjects);
     break;
   case SceneSettings::RENDER_MODE::FALLOFF_MAP:
     renderFalloffMap(sceneData.meshIdToMesh.at(kTerrainMeshId), sceneData.fpsCamera.createViewMatrix(),
@@ -210,7 +210,7 @@ void renderScene() {
     cameraPosition.y -= distanceToMoveY;
     camera.setCameraPosition(cameraPosition);
     camera.invertPitch();
-    renderTerrainReflectionTexture(sceneData, camera.createViewMatrix(), viewToClipMatrix,
+    renderSceneReflectionTexture(sceneData, camera.createViewMatrix(), viewToClipMatrix,
                                    sceneProgramObjects);
 
     // Change camera back to original state
@@ -219,13 +219,9 @@ void renderScene() {
     camera.invertPitch();
 
     const auto viewMatrix = camera.createViewMatrix();
-    renderLight(sceneData.lightMeshes, windowData.width, windowData.height, viewMatrix, viewToClipMatrix,
-                sceneProgramObjects.at(kLightShaderProgramObjectName));
-    renderTerrain(windowData, sceneData, viewMatrix, viewToClipMatrix,
-                  sceneSettings.renderMode == SceneSettings::RENDER_MODE::MESH ? false : true,
-                  sceneProgramObjects);
-    renderWater(sceneData.meshIdToMesh.at(kWaterMeshId), sceneData, windowData.width, windowData.height,
-                viewMatrix, viewToClipMatrix, sceneProgramObjects.at(kWaterProgramObjectName));
+    renderScene(windowData, sceneData, viewMatrix, viewToClipMatrix,
+                sceneSettings.renderMode == SceneSettings::RENDER_MODE::MESH ? false : true,
+                sceneProgramObjects);
   } break;
   default:
     assert(false);
